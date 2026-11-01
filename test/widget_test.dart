@@ -1,30 +1,30 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:hatch_care/main.dart';
+import 'package:hatch_care/app/app.dart';
+import 'package:hatch_care/core/constants/app_colors.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('Splash menampilkan logo dan teks HATCH-CARE', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const ProviderScope(child: HatchCareApp()));
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    // Splash 1: logo sudah tampil.
+    expect(find.byType(Image), findsOneWidget);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    // Teks "HATCH-CARE" sudah ada di tree (opacity 0 pada awal).
+    expect(find.text('HATCH-CARE'), findsOneWidget);
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Background scaffold harus kuning (Tertiary).
+    final scaffold = tester.widget<Scaffold>(find.byType(Scaffold).first);
+    expect(scaffold.backgroundColor, AppColors.tertiary);
+
+    // Majukan waktu melewati semua timer (3,5 detik + sedikit lebih)
+    // agar tidak ada timer menggantung.
+    await tester.pump(const Duration(milliseconds: 1600));
+    await tester.pump(const Duration(milliseconds: 2000));
+    await tester.pumpAndSettle();
   });
 }

@@ -22,4 +22,3 @@ abstract final class AppTheme {
     );
   }
 }
-

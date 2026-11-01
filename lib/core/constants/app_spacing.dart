@@ -9,4 +9,3 @@ abstract final class AppSpacing {
   static const double xl = 24;
   static const double xxl = 32;
 }
-

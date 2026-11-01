@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
-class SkScreen extends StatelessWidget {
-  const SkScreen({super.key});
+import 'package:hatch_care/core/constants/app_colors.dart';
+import 'package:hatch_care/core/constants/app_spacing.dart';
 
-  static const Color _navy = Color(0xFF003063);
-  static const Color _yellow = Color(0xFFFADE65);
+/// Halaman Syarat dan Ketentuan aplikasi HATCH-CARE.
+class SyaratKetentuanPage extends StatelessWidget {
+  const SyaratKetentuanPage({super.key});
 
   static const List<_SkItem> _items = [
     _SkItem(
@@ -54,16 +56,24 @@ class SkScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.neutral,
       appBar: AppBar(
-        backgroundColor: _navy,
+        backgroundColor: AppColors.primary,
         elevation: 0,
-        iconTheme: const IconThemeData(color: _yellow),
+        iconTheme: const IconThemeData(color: AppColors.tertiary),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            }
+          },
+        ),
         title: const Text(
           'Syarat Dan Ketentuan',
           style: TextStyle(
-            color: _yellow,
-            fontSize: 22,
+            color: AppColors.tertiary,
+            fontSize: 20,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -73,24 +83,34 @@ class SkScreen extends StatelessWidget {
           children: [
             Expanded(
               child: ListView.separated(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(AppSpacing.lg),
                 itemCount: _items.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 14),
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: AppSpacing.md),
                 itemBuilder: (context, index) =>
                     _SkCard(number: index + 1, item: _items[index]),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.xl,
+                AppSpacing.sm,
+                AppSpacing.xl,
+                AppSpacing.lg,
+              ),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline, size: 20, color: Colors.grey[700]),
-                  const SizedBox(width: 12),
-                  Expanded(
+                  const Icon(
+                    Icons.info_outline,
+                    size: 20,
+                    color: AppColors.textSubtle,
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  const Expanded(
                     child: Text(
                       'Persetujuan dilakukan melalui checkbox di formulir pendaftaran.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 13, color: Colors.grey[800]),
+                      style: TextStyle(fontSize: 12, color: AppColors.textBody),
                     ),
                   ),
                 ],
@@ -123,18 +143,16 @@ class _SkCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const navy = SkScreen._navy;
-
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.neutral,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: AppColors.borderLight),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -148,46 +166,50 @@ class _SkCard extends StatelessWidget {
             height: 36,
             alignment: Alignment.center,
             decoration: const BoxDecoration(
-              color: Color(0xFF0B1B3A),
+              color: AppColors.primaryDark,
               shape: BoxShape.circle,
             ),
             child: Text(
               '$number',
               style: const TextStyle(
-                color: Colors.white,
+                color: AppColors.neutral,
                 fontWeight: FontWeight.w700,
                 fontSize: 16,
               ),
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Flexible(
+                    Expanded(
                       child: Text(
                         item.title,
                         style: const TextStyle(
-                          color: navy,
-                          fontSize: 16,
+                          color: AppColors.primary,
+                          fontSize: 15,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Icon(item.icon, size: 18, color: navy.withOpacity(0.7)),
+                    const SizedBox(width: AppSpacing.sm),
+                    Icon(
+                      item.icon,
+                      size: 18,
+                      color: AppColors.primary.withValues(alpha: 0.7),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   item.description,
-                  style: TextStyle(
-                    fontSize: 14,
+                  style: const TextStyle(
+                    fontSize: 13,
                     height: 1.5,
-                    color: Colors.grey[800],
+                    color: AppColors.textBody,
                   ),
                 ),
               ],

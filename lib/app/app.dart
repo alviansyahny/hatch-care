@@ -17,4 +17,3 @@ class HatchCareApp extends StatelessWidget {
     );
   }
 }
-

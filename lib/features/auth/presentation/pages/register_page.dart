@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
-import 'login_screen.dart';
-import 'sk_screen.dart';
+import 'package:go_router/go_router.dart';
 
-class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+import 'package:hatch_care/core/constants/app_assets.dart';
+import 'package:hatch_care/core/constants/app_colors.dart';
+import 'package:hatch_care/core/constants/app_spacing.dart';
+
+/// Halaman pendaftaran akun HATCH-CARE.
+class RegisterPage extends StatefulWidget {
+  const RegisterPage({super.key});
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  State<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
-  static const Color navy = Color(0xFF023266);
-  static const Color yellow = Color(0xFFFBDF65);
-  static const Color fieldColor = Color(0xFFF2F2F2);
-
+class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
 
   final usernameController = TextEditingController();
@@ -34,7 +34,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  // Widget input form
   Widget buildInputField({
     required String label,
     required String hint,
@@ -44,7 +43,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     bool isConfirmPassword = false,
     TextInputType keyboardType = TextInputType.text,
   }) {
-    bool isObscure = isPassword || isConfirmPassword;
+    final isObscure = isPassword || isConfirmPassword;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -52,107 +51,88 @@ class _RegisterScreenState extends State<RegisterScreen> {
         Text(
           label,
           style: const TextStyle(
-            color: navy,
+            color: AppColors.primary,
             fontSize: 12,
             fontWeight: FontWeight.w600,
           ),
         ),
-
-        const SizedBox(height: 7),
-
-        SizedBox(
-          height: 43,
-          child: TextFormField(
-            controller: controller,
-            obscureText: isPassword
-                ? obscurePassword
-                : isConfirmPassword
-                    ? obscureConfirmPassword
-                    : false,
-            keyboardType: keyboardType,
-            style: const TextStyle(
-              fontSize: 12,
-              color: navy,
+        const SizedBox(height: AppSpacing.sm),
+        TextFormField(
+          controller: controller,
+          obscureText: isPassword
+              ? obscurePassword
+              : isConfirmPassword
+              ? obscureConfirmPassword
+              : false,
+          keyboardType: keyboardType,
+          style: const TextStyle(fontSize: 12, color: AppColors.primary),
+          decoration: InputDecoration(
+            isDense: true,
+            hintText: hint,
+            hintStyle: const TextStyle(fontSize: 12, color: AppColors.textHint),
+            prefixIcon: Icon(icon, color: AppColors.iconAccent, size: 18),
+            suffixIcon: isObscure
+                ? IconButton(
+                    onPressed: () {
+                      setState(() {
+                        if (isPassword) {
+                          obscurePassword = !obscurePassword;
+                        } else {
+                          obscureConfirmPassword = !obscureConfirmPassword;
+                        }
+                      });
+                    },
+                    icon: Icon(
+                      (isPassword ? obscurePassword : obscureConfirmPassword)
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                      color: AppColors.iconAccent,
+                      size: 18,
+                    ),
+                  )
+                : null,
+            filled: true,
+            fillColor: AppColors.fieldFill,
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: AppSpacing.md,
+              horizontal: AppSpacing.md,
             ),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: const TextStyle(
-                fontSize: 12,
-                color: Color(0xFF888888),
-              ),
-              prefixIcon: Icon(
-                icon,
-                color: const Color(0xFF496A9A),
-                size: 17,
-              ),
-              suffixIcon: isObscure
-                  ? IconButton(
-                      onPressed: () {
-                        setState(() {
-                          if (isPassword) {
-                            obscurePassword = !obscurePassword;
-                          } else {
-                            obscureConfirmPassword =
-                                !obscureConfirmPassword;
-                          }
-                        });
-                      },
-                      icon: Icon(
-                        (isPassword
-                                ? obscurePassword
-                                : obscureConfirmPassword)
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
-                        color: const Color(0xFF496A9A),
-                        size: 18,
-                      ),
-                    )
-                  : null,
-              filled: true,
-              fillColor: fieldColor,
-              contentPadding: const EdgeInsets.symmetric(
-                vertical: 10,
-                horizontal: 12,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(11),
-                borderSide: BorderSide.none,
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(11),
-                borderSide: BorderSide.none,
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(11),
-                borderSide: const BorderSide(
-                  color: Color(0xFF8AA5D0),
-                  width: 1,
-                ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(11),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(11),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(11),
+              borderSide: const BorderSide(
+                color: AppColors.secondary,
+                width: 1,
               ),
             ),
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return '$label tidak boleh kosong';
-              }
-
-              if (isPassword && value.length < 8) {
-                return 'Kata sandi minimal 8 karakter';
-              }
-
-              if (isConfirmPassword &&
-                  value != passwordController.text) {
-                return 'Konfirmasi kata sandi tidak sesuai';
-              }
-
-              if (keyboardType == TextInputType.emailAddress &&
-                  !RegExp(r'^[^@]+@[^@]+\.[^@]+')
-                      .hasMatch(value.trim())) {
-                return 'Masukkan alamat email yang valid';
-              }
-
-              return null;
-            },
           ),
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return '$label tidak boleh kosong';
+            }
+
+            if (isPassword && value.length < 8) {
+              return 'Kata sandi minimal 8 karakter';
+            }
+
+            if (isConfirmPassword && value != passwordController.text) {
+              return 'Konfirmasi kata sandi tidak sesuai';
+            }
+
+            if (keyboardType == TextInputType.emailAddress &&
+                !RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value.trim())) {
+              return 'Masukkan alamat email yang valid';
+            }
+
+            return null;
+          },
         ),
       ],
     );
@@ -160,54 +140,55 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final logoSize = (screenWidth * 0.25).clamp(80.0, 100.0);
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.neutral,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
             return SingleChildScrollView(
               child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight,
-                ),
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 22,
-                    vertical: 12,
+                    horizontal: AppSpacing.xl,
+                    vertical: AppSpacing.md,
                   ),
                   child: Column(
                     children: [
-                      const SizedBox(height: 38),
+                      const SizedBox(height: AppSpacing.xxl),
 
-                      // LOGO HATCH-CARE
+                      // Logo HATCH-CARE
                       Container(
-                        width: 100,
-                        height: 100,
-                        padding: const EdgeInsets.all(12),
+                        width: logoSize,
+                        height: logoSize,
+                        padding: const EdgeInsets.all(AppSpacing.md),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppColors.neutral,
                           borderRadius: BorderRadius.circular(18),
                           border: Border.all(
-                            color: const Color(0xFF8AA5D0),
+                            color: AppColors.secondary,
                             width: 1.3,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.08),
+                              color: Colors.black.withValues(alpha: 0.08),
                               blurRadius: 5,
                               offset: const Offset(0, 3),
                             ),
                           ],
                         ),
                         child: Image.asset(
-                          'assets/Logo HatchCare.png',
+                          AppAssets.logoHatchcare,
                           fit: BoxFit.contain,
                         ),
                       ),
 
-                      const SizedBox(height: 17),
+                      const SizedBox(height: AppSpacing.lg),
 
-                      // DESKRIPSI
+                      // Deskripsi
                       const Text(
                         'Daftar untuk mulai memantau proses '
                         'penetasan telur dengan lebih cerdas.',
@@ -215,13 +196,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         style: TextStyle(
                           fontSize: 12,
                           height: 1.4,
-                          color: Color(0xFF424242),
+                          color: AppColors.textBody,
                         ),
                       ),
 
-                      const SizedBox(height: 30),
+                      const SizedBox(height: AppSpacing.xxl),
 
-                      // FORM REGISTER
+                      // Form Register
                       Form(
                         key: _formKey,
                         child: Column(
@@ -233,7 +214,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               controller: usernameController,
                             ),
 
-                            const SizedBox(height: 13),
+                            const SizedBox(height: AppSpacing.md),
 
                             buildInputField(
                               label: 'Alamat Email',
@@ -243,7 +224,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               keyboardType: TextInputType.emailAddress,
                             ),
 
-                            const SizedBox(height: 13),
+                            const SizedBox(height: AppSpacing.md),
 
                             buildInputField(
                               label: 'Kata Sandi',
@@ -253,7 +234,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               isPassword: true,
                             ),
 
-                            const SizedBox(height: 13),
+                            const SizedBox(height: AppSpacing.md),
 
                             buildInputField(
                               label: 'Konfirmasi Kata Sandi',
@@ -266,56 +247,44 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                       ),
 
-                      const SizedBox(height: 14),
+                      const SizedBox(height: AppSpacing.md),
 
-                      // CHECKBOX SYARAT DAN KETENTUAN
+                      // Checkbox Syarat & Ketentuan
                       Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          SizedBox(
-                            width: 25,
-                            height: 24,
-                            child: Checkbox(
-                              value: agreeTerms,
-                              activeColor: navy,
-                              onChanged: (value) {
-                                setState(() {
-                                  agreeTerms = value ?? false;
-                                });
-                              },
-                              materialTapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
-                            ),
+                          Checkbox(
+                            value: agreeTerms,
+                            activeColor: AppColors.primary,
+                            onChanged: (value) {
+                              setState(() {
+                                agreeTerms = value ?? false;
+                              });
+                            },
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
                           ),
-
-                          const SizedBox(width: 7),
-
+                          const SizedBox(width: AppSpacing.xs),
                           Expanded(
                             child: Wrap(
-                              crossAxisAlignment:
-                                  WrapCrossAlignment.center,
+                              crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
                                 const Text(
                                   'Saya menyetujui ',
                                   style: TextStyle(
-                                    fontSize: 10,
-                                    color: Color(0xFF424242),
+                                    fontSize: 11,
+                                    color: AppColors.textBody,
                                   ),
                                 ),
                                 GestureDetector(
                                   onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => const SkScreen(),
-                                      ),
-                                    );
+                                    context.push('/syarat-ketentuan');
                                   },
                                   child: const Text(
                                     'Syarat dan Ketentuan',
                                     style: TextStyle(
-                                      fontSize: 10,
-                                      color: navy,
+                                      fontSize: 11,
+                                      color: AppColors.primary,
                                       fontWeight: FontWeight.bold,
                                       decoration: TextDecoration.underline,
                                     ),
@@ -324,8 +293,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 const Text(
                                   ' HATCH-CARE',
                                   style: TextStyle(
-                                    fontSize: 10,
-                                    color: Color(0xFF424242),
+                                    fontSize: 11,
+                                    color: AppColors.textBody,
                                   ),
                                 ),
                               ],
@@ -334,12 +303,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ],
                       ),
 
-                      const SizedBox(height: 12),
+                      const SizedBox(height: AppSpacing.md),
 
-                      // TOMBOL DAFTAR
+                      // Tombol Daftar
                       SizedBox(
                         width: double.infinity,
-                        height: 43,
                         child: ElevatedButton(
                           onPressed: () {
                             if (_formKey.currentState!.validate()) {
@@ -364,9 +332,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             }
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: yellow,
-                            foregroundColor: navy,
+                            backgroundColor: AppColors.tertiary,
+                            foregroundColor: AppColors.primary,
                             elevation: 0,
+                            padding: const EdgeInsets.symmetric(
+                              vertical: AppSpacing.md,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(9),
                             ),
@@ -381,33 +352,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                       ),
 
-                      const SizedBox(height: 13),
+                      const SizedBox(height: AppSpacing.md),
 
-                      // LINK MASUK
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      // Link Masuk
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           const Text(
                             'Sudah punya akun? ',
                             style: TextStyle(
                               fontSize: 11,
-                              color: Color(0xFF555555),
+                              color: AppColors.textSubtle,
                             ),
                           ),
                           GestureDetector(
                             onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const LoginScreen(),
-                                ),
-                              );
+                              context.go('/login');
                             },
                             child: const Text(
                               'Masuk',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: navy,
+                                color: AppColors.primary,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -415,7 +382,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ],
                       ),
 
-                      const SizedBox(height: 20),
+                      const SizedBox(height: AppSpacing.xl),
                     ],
                   ),
                 ),

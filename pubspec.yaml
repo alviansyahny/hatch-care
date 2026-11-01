@@ -57,13 +57,11 @@ flutter:
 
   assets:
     - assets/images/
-    - assets/Logo HatchCare.png
-    - assets/farmer.png
 
   fonts:
     - family: KronaOne
       fonts:
-        - asset: fonts/KronaOne-Regular.ttf
+        - asset: assets/fonts/KronaOne-Regular.ttf
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

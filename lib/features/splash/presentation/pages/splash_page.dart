@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hatch_care/core/constants/app_assets.dart';
 import 'package:hatch_care/core/constants/app_colors.dart';
 import 'package:hatch_care/core/constants/app_spacing.dart';
+import 'package:hatch_care/core/constants/app_text_styles.dart';
 
 /// Layar splash HATCH-CARE.
 ///
@@ -90,9 +91,9 @@ class _SplashPageState extends State<SplashPage>
               opacity: _textOpacity,
               child: Text(
                 'HATCH-CARE',
-                style: TextStyle(
+                style: AppTextStyles.brandTitle.copyWith(
                   color: AppColors.primary,
-                  fontSize: screenWidth * 0.09,
+                  fontSize: screenWidth * 0.08,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 2,
                 ),

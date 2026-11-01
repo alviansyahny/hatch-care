@@ -1,16 +1,43 @@
-# hatch_care
+# HATCH-CARE
 
-A new Flutter project.
+Aplikasi mobile untuk monitoring penetasan telur: candling, kondisi inkubator,
+dan riwayat status telur (Fertil, Infertil, Mortal, Menetas).
 
-## Getting Started
+## Tech stack
 
-This project is a starting point for a Flutter application.
+- Flutter 3.38.9 (stable)
+- State management: Riverpod (direncanakan)
+- Routing: go_router (direncanakan)
 
-A few resources to get you started if this is your first Flutter project:
+## Prasyarat
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- Flutter SDK 3.38.9
+- Git
+- Android Studio (untuk Android SDK) atau HP Android dengan USB debugging
+- Editor dengan ekstensi Dart dan Flutter (Antigravity atau VS Code)
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Cara menjalankan
+
+```bash
+git clone https://github.com/alviansyahny/hatch-care.git
+cd hatch-care
+flutter pub get
+flutter run
+```
+
+## Struktur folder
+
+```
+lib/
+├── app/        # setup aplikasi, router, theme
+├── core/       # kode yang dipakai lintas fitur
+└── features/   # satu folder per fitur
+```
+
+## Alur kerja tim
+
+Baca [CONTRIBUTING.md](CONTRIBUTING.md) sebelum mulai mengerjakan apa pun.
+
+## Tim
+
+- alviansyahny

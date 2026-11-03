@@ -5,7 +5,7 @@ import 'package:hatch_care/features/auth/presentation/pages/register_page.dart';
 import 'package:hatch_care/features/auth/presentation/pages/syarat_ketentuan_page.dart';
 import 'package:hatch_care/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:hatch_care/features/egg_check/presentation/pages/egg_check_placeholder_page.dart';
-import 'package:hatch_care/features/history/presentation/pages/history_placeholder_page.dart';
+import 'package:hatch_care/features/history/presentation/pages/history_page.dart';
 import 'package:hatch_care/features/live/presentation/pages/live_placeholder_page.dart';
 import 'package:hatch_care/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:hatch_care/features/shell/presentation/pages/main_shell_page.dart';
@@ -81,7 +81,7 @@ final GoRouter appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/home/history',
-              builder: (context, state) => const HistoryPlaceholderPage(),
+              builder: (context, state) => const HistoryPage(),
             ),
           ],
         ),

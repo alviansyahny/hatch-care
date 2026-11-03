@@ -60,4 +60,30 @@ abstract final class AppColors {
   /// Latar belakang badge sukses ("Stabil", "Ideal").
   /// Diambil secara visual dari design/screens/09_dashboard_1.png.
   static const Color badgeSuccessBg = Color(0xFFE8F7EE);
+
+  // --- Badge status telur (History) ---
+
+  /// Background badge status Fertile.
+  /// Diambil secara visual dari design/screens/13_history.png.
+  static const Color badgeFertileBg = Color(0xFFE8EEF7);
+
+  /// Titik kuning badge/filter status Infertile.
+  /// Diambil secara visual dari design/screens/13_history.png.
+  static const Color badgeInfertileDot = Color(0xFFD4A843);
+
+  /// Background badge status Infertile.
+  /// Diambil secara visual dari design/screens/13_history.png.
+  static const Color badgeInfertileBg = Color(0xFFEEF0F4);
+
+  /// Teks badge status Mortalitas (merah).
+  /// Diambil secara visual dari design/screens/13_history.png.
+  static const Color badgeMortalitasText = Color(0xFF9B2D2D);
+
+  /// Background badge status Mortalitas (pink muda).
+  /// Diambil secara visual dari design/screens/13_history.png.
+  static const Color badgeMortalitasBg = Color(0xFFFDEAEA);
+
+  /// Titik merah badge/filter status Mortalitas.
+  /// Diambil secara visual dari design/screens/13_history.png.
+  static const Color badgeMortalitasDot = Color(0xFFD94444);
 }

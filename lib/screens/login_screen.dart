@@ -1,7 +1,6 @@
-
 import 'package:flutter/material.dart';
 import 'register_screen.dart';
-
+import 'package:hatch_care/screens/dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -38,9 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
           builder: (context, constraints) {
             return SingleChildScrollView(
               child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight,
-                ),
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 30,
@@ -111,9 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(13),
-                          border: Border.all(
-                            color: const Color(0xFFF5F5F5),
-                          ),
+                          border: Border.all(color: const Color(0xFFF5F5F5)),
                         ),
                         child: Form(
                           key: _formKey,
@@ -141,8 +136,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     color: navy,
                                   ),
                                   decoration: InputDecoration(
-                                    hintText:
-                                        'contoh@email.com atau username',
+                                    hintText: 'contoh@email.com atau username',
                                     hintStyle: const TextStyle(
                                       fontSize: 12,
                                       color: Color(0xFF858585),
@@ -154,32 +148,27 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                     filled: true,
                                     fillColor: fieldColor,
-                                    contentPadding:
-                                        const EdgeInsets.symmetric(
+                                    contentPadding: const EdgeInsets.symmetric(
                                       horizontal: 12,
                                       vertical: 10,
                                     ),
                                     border: OutlineInputBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(11),
+                                      borderRadius: BorderRadius.circular(11),
                                       borderSide: BorderSide.none,
                                     ),
                                     enabledBorder: OutlineInputBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(11),
+                                      borderRadius: BorderRadius.circular(11),
                                       borderSide: BorderSide.none,
                                     ),
                                     focusedBorder: OutlineInputBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(11),
+                                      borderRadius: BorderRadius.circular(11),
                                       borderSide: const BorderSide(
                                         color: Color(0xFF8AA5D0),
                                       ),
                                     ),
                                   ),
                                   validator: (value) {
-                                    if (value == null ||
-                                        value.trim().isEmpty) {
+                                    if (value == null || value.trim().isEmpty) {
                                       return 'Username atau email wajib diisi';
                                     }
                                     return null;
@@ -224,8 +213,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     suffixIcon: IconButton(
                                       onPressed: () {
                                         setState(() {
-                                          obscurePassword =
-                                              !obscurePassword;
+                                          obscurePassword = !obscurePassword;
                                         });
                                       },
                                       icon: Icon(
@@ -238,32 +226,27 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                     filled: true,
                                     fillColor: fieldColor,
-                                    contentPadding:
-                                        const EdgeInsets.symmetric(
+                                    contentPadding: const EdgeInsets.symmetric(
                                       horizontal: 12,
                                       vertical: 10,
                                     ),
                                     border: OutlineInputBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(11),
+                                      borderRadius: BorderRadius.circular(11),
                                       borderSide: BorderSide.none,
                                     ),
                                     enabledBorder: OutlineInputBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(11),
+                                      borderRadius: BorderRadius.circular(11),
                                       borderSide: BorderSide.none,
                                     ),
                                     focusedBorder: OutlineInputBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(11),
+                                      borderRadius: BorderRadius.circular(11),
                                       borderSide: const BorderSide(
                                         color: Color(0xFF8AA5D0),
                                       ),
                                     ),
                                   ),
                                   validator: (value) {
-                                    if (value == null ||
-                                        value.isEmpty) {
+                                    if (value == null || value.isEmpty) {
                                       return 'Kata sandi wajib diisi';
                                     }
                                     return null;
@@ -278,8 +261,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 alignment: Alignment.centerRight,
                                 child: GestureDetector(
                                   onTap: () {
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(
+                                    ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
                                         content: Text(
                                           'Halaman pemulihan kata sandi '
@@ -307,29 +289,25 @@ class _LoginScreenState extends State<LoginScreen> {
                                 height: 43,
                                 child: ElevatedButton(
                                   onPressed: () {
-                                    if (_formKey.currentState!.validate()) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'Form login berhasil divalidasi.',
+                                      if (_formKey.currentState!.validate()) {
+                                        Navigator.pushReplacement(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => const DashboardScreen(),
                                           ),
-                                        ),
-                                      );
-                                    }
-                                  },
+                                        );
+                                      }
+                                    },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: yellow,
                                     foregroundColor: Colors.black,
                                     elevation: 0,
                                     shape: RoundedRectangleBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(10),
+                                      borderRadius: BorderRadius.circular(10),
                                     ),
                                   ),
                                   child: const Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.center,
+                                    mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       Text(
                                         'Masuk',
@@ -339,10 +317,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         ),
                                       ),
                                       SizedBox(width: 7),
-                                      Icon(
-                                        Icons.arrow_forward,
-                                        size: 17,
-                                      ),
+                                      Icon(Icons.arrow_forward, size: 17),
                                     ],
                                   ),
                                 ),
@@ -370,8 +345,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) =>
-                                      const RegisterScreen(),
+                                  builder: (context) => const RegisterScreen(),
                                 ),
                               );
                             },

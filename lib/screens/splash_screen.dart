@@ -1,4 +1,3 @@
-
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'unboarding_screen.dart';
@@ -56,9 +55,7 @@ class _SplashScreenState extends State<SplashScreen>
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (context) => const OnboardingScreen(),
-        ),
+        MaterialPageRoute(builder: (context) => const OnboardingScreen()),
       );
     });
   }
@@ -86,12 +83,9 @@ class _SplashScreenState extends State<SplashScreen>
           ]),
           builder: (context, child) {
             final lift = liftController.value * 25;
-            final floating =
-                math.sin(floatController.value * math.pi) * 7;
+            final floating = math.sin(floatController.value * math.pi) * 7;
 
-            final scale = Curves.elasticOut.transform(
-              splashController.value,
-            );
+            final scale = Curves.elasticOut.transform(splashController.value);
 
             return Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -106,8 +100,7 @@ class _SplashScreenState extends State<SplashScreen>
                       Transform.scale(
                         scale: 0.5 + splashController.value,
                         child: Opacity(
-                          opacity: (1 - splashController.value)
-                              .clamp(0.0, 1.0),
+                          opacity: (1 - splashController.value).clamp(0.0, 1.0),
                           child: Container(
                             width: 190,
                             height: 190,
@@ -145,10 +138,7 @@ class _SplashScreenState extends State<SplashScreen>
                 Opacity(
                   opacity: titleController.value,
                   child: Transform.translate(
-                    offset: Offset(
-                      0,
-                      15 * (1 - titleController.value),
-                    ),
+                    offset: Offset(0, 15 * (1 - titleController.value)),
                     child: const Text(
                       'HATCH-CARE',
                       style: TextStyle(

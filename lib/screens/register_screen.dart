@@ -67,24 +67,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
             obscureText: isPassword
                 ? obscurePassword
                 : isConfirmPassword
-                    ? obscureConfirmPassword
-                    : false,
+                ? obscureConfirmPassword
+                : false,
             keyboardType: keyboardType,
-            style: const TextStyle(
-              fontSize: 12,
-              color: navy,
-            ),
+            style: const TextStyle(fontSize: 12, color: navy),
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: const TextStyle(
                 fontSize: 12,
                 color: Color(0xFF888888),
               ),
-              prefixIcon: Icon(
-                icon,
-                color: const Color(0xFF496A9A),
-                size: 17,
-              ),
+              prefixIcon: Icon(icon, color: const Color(0xFF496A9A), size: 17),
               suffixIcon: isObscure
                   ? IconButton(
                       onPressed: () {
@@ -92,15 +85,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           if (isPassword) {
                             obscurePassword = !obscurePassword;
                           } else {
-                            obscureConfirmPassword =
-                                !obscureConfirmPassword;
+                            obscureConfirmPassword = !obscureConfirmPassword;
                           }
                         });
                       },
                       icon: Icon(
-                        (isPassword
-                                ? obscurePassword
-                                : obscureConfirmPassword)
+                        (isPassword ? obscurePassword : obscureConfirmPassword)
                             ? Icons.visibility_outlined
                             : Icons.visibility_off_outlined,
                         color: const Color(0xFF496A9A),
@@ -139,14 +129,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 return 'Kata sandi minimal 8 karakter';
               }
 
-              if (isConfirmPassword &&
-                  value != passwordController.text) {
+              if (isConfirmPassword && value != passwordController.text) {
                 return 'Konfirmasi kata sandi tidak sesuai';
               }
 
               if (keyboardType == TextInputType.emailAddress &&
-                  !RegExp(r'^[^@]+@[^@]+\.[^@]+')
-                      .hasMatch(value.trim())) {
+                  !RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value.trim())) {
                 return 'Masukkan alamat email yang valid';
               }
 
@@ -167,9 +155,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           builder: (context, constraints) {
             return SingleChildScrollView(
               child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight,
-                ),
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 22,
@@ -292,8 +278,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                           Expanded(
                             child: Wrap(
-                              crossAxisAlignment:
-                                  WrapCrossAlignment.center,
+                              crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
                                 const Text(
                                   'Saya menyetujui ',

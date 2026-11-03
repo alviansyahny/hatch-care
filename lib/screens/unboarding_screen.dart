@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'register_screen.dart';
 
@@ -17,9 +16,7 @@ class OnboardingScreen extends StatelessWidget {
           builder: (context, constraints) {
             return SingleChildScrollView(
               child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight,
-                ),
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 22,
@@ -75,13 +72,13 @@ class OnboardingScreen extends StatelessWidget {
                         height: 44,
                         child: ElevatedButton(
                           onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const RegisterScreen(),
-                                ),
-                              );
-                            },
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const RegisterScreen(),
+                              ),
+                            );
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: yellow,
                             foregroundColor: navy,
@@ -112,9 +109,7 @@ class OnboardingScreen extends StatelessWidget {
                           },
                           style: OutlinedButton.styleFrom(
                             foregroundColor: navy,
-                            side: const BorderSide(
-                              color: Color(0xFFE0E0E0),
-                            ),
+                            side: const BorderSide(color: Color(0xFFE0E0E0)),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(9),
                             ),

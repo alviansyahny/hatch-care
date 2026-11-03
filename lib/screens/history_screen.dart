@@ -1,6 +1,5 @@
-
 import 'package:flutter/material.dart';
-import 'live_screen.dart'; 
+import 'live_screen.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -15,12 +14,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   int selectedFilter = 0;
 
-  final List<String> filters = [
-    'Semua',
-    'Fertile',
-    'Infertile',
-    'Mortalitas',
-  ];
+  final List<String> filters = ['Semua', 'Fertile', 'Infertile', 'Mortalitas'];
 
   final List<Map<String, dynamic>> historyData = [
     {
@@ -165,9 +159,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: active
-                              ? navy
-                              : const Color(0xFFF0F2F5),
+                          color: active ? navy : const Color(0xFFF0F2F5),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
@@ -188,9 +180,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               style: TextStyle(
                                 fontSize: 9,
                                 fontWeight: FontWeight.bold,
-                                color: active
-                                    ? const Color(0xFFFFDF72)
-                                    : blue,
+                                color: active ? const Color(0xFFFFDF72) : blue,
                               ),
                             ),
                           ],
@@ -208,16 +198,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   ? const Center(
                       child: Text(
                         'Belum ada riwayat pemeriksaan.',
-                        style: TextStyle(
-                          color: Colors.blueGrey,
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: Colors.blueGrey, fontSize: 12),
                       ),
                     )
                   : ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(
-                        16, 0, 16, 15,
-                      ),
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 15),
                       itemCount: filteredHistory.length,
                       itemBuilder: (context, index) {
                         final item = filteredHistory[index];
@@ -235,9 +220,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         padding: const EdgeInsets.fromLTRB(10, 5, 10, 10),
         decoration: const BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(22),
-          ),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
           boxShadow: [
             BoxShadow(
               color: Color(0x10000000),
@@ -297,11 +280,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         width: 48,
                         height: 48,
                         color: const Color(0xFFEAF1FA),
-                        child: const Icon(
-                          Icons.egg_alt,
-                          color: blue,
-                          size: 27,
-                        ),
+                        child: const Icon(Icons.egg_alt, color: blue, size: 27),
                       );
                     },
                   ),
@@ -423,11 +402,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.circle,
-                        size: 6,
-                        color: statusColor(status),
-                      ),
+                      Icon(Icons.circle, size: 6, color: statusColor(status)),
                       const SizedBox(width: 3),
                       Text(
                         status,
@@ -460,9 +435,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       context: context,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(22),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
       builder: (context) {
         return Padding(
@@ -513,19 +486,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
           Navigator.pop(context);
           // Navigasi Live dapat dibuka dari Dashboard.
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('$title sedang disiapkan'),
-            ),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('$title sedang disiapkan')));
         }
       },
       borderRadius: BorderRadius.circular(25),
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 13,
-          vertical: 8,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
         decoration: BoxDecoration(
           color: active ? navy : Colors.transparent,
           borderRadius: BorderRadius.circular(25),
@@ -536,21 +504,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
             Icon(
               icon,
               size: 16,
-              color: active
-                  ? const Color(0xFFFFDF72)
-                  : blue,
+              color: active ? const Color(0xFFFFDF72) : blue,
             ),
             const SizedBox(height: 2),
             Text(
               title,
               style: TextStyle(
                 fontSize: 8,
-                color: active
-                    ? const Color(0xFFFFDF72)
-                    : blue,
-                fontWeight: active
-                    ? FontWeight.bold
-                    : FontWeight.normal,
+                color: active ? const Color(0xFFFFDF72) : blue,
+                fontWeight: active ? FontWeight.bold : FontWeight.normal,
               ),
             ),
           ],

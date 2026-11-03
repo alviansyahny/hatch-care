@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'live_screen.dart';
 import 'history_screen.dart';
@@ -19,10 +18,7 @@ class _NotifikasiScreenState extends State<NotifikasiScreen> {
 
   void showMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-      ),
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
     );
   }
 
@@ -37,9 +33,7 @@ class _NotifikasiScreenState extends State<NotifikasiScreen> {
       case 1:
         await Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => const LiveScreen(),
-          ),
+          MaterialPageRoute(builder: (_) => const LiveScreen()),
         );
         break;
 
@@ -50,9 +44,7 @@ class _NotifikasiScreenState extends State<NotifikasiScreen> {
       case 3:
         await Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => const HistoryScreen(),
-          ),
+          MaterialPageRoute(builder: (_) => const HistoryScreen()),
         );
         break;
     }
@@ -77,10 +69,7 @@ class _NotifikasiScreenState extends State<NotifikasiScreen> {
           children: [
             IconButton(
               onPressed: () => Navigator.pop(context),
-              icon: const Icon(
-                Icons.arrow_back,
-                color: yellow,
-              ),
+              icon: const Icon(Icons.arrow_back, color: yellow),
             ),
             const Text(
               'Notifikasi',
@@ -168,9 +157,7 @@ class _NotifikasiScreenState extends State<NotifikasiScreen> {
         padding: const EdgeInsets.fromLTRB(8, 7, 8, 10),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(24),
-          ),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           boxShadow: [
             BoxShadow(
               color: navy.withValues(alpha: 0.08),
@@ -230,11 +217,7 @@ class _NotifikasiScreenState extends State<NotifikasiScreen> {
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: borderColor),
                 ),
-                child: Icon(
-                  icon,
-                  color: iconColor,
-                  size: 23,
-                ),
+                child: Icon(icon, color: iconColor, size: 23),
               ),
               const SizedBox(width: 11),
 
@@ -308,10 +291,7 @@ class _NotifikasiScreenState extends State<NotifikasiScreen> {
 
           const SizedBox(height: 10),
 
-          Divider(
-            height: 1,
-            color: const Color(0xFFE9EDF4),
-          ),
+          Divider(height: 1, color: const Color(0xFFE9EDF4)),
 
           const SizedBox(height: 9),
 
@@ -336,18 +316,11 @@ class _NotifikasiScreenState extends State<NotifikasiScreen> {
               if (isCompleted)
                 const Row(
                   children: [
-                    Icon(
-                      Icons.check,
-                      color: Color(0xFF8AA2C5),
-                      size: 13,
-                    ),
+                    Icon(Icons.check, color: Color(0xFF8AA2C5), size: 13),
                     SizedBox(width: 3),
                     Text(
                       'Selesai',
-                      style: TextStyle(
-                        color: Color(0xFF8AA2C5),
-                        fontSize: 10,
-                      ),
+                      style: TextStyle(color: Color(0xFF8AA2C5), fontSize: 10),
                     ),
                   ],
                 )
@@ -355,14 +328,10 @@ class _NotifikasiScreenState extends State<NotifikasiScreen> {
                 OutlinedButton(
                   onPressed: onPressed,
                   style: OutlinedButton.styleFrom(
-                    backgroundColor: buttonFilled
-                        ? yellow
-                        : Colors.white,
+                    backgroundColor: buttonFilled ? yellow : Colors.white,
                     foregroundColor: navy,
                     side: BorderSide(
-                      color: buttonFilled
-                          ? yellow
-                          : const Color(0xFFD4E0F1),
+                      color: buttonFilled ? yellow : const Color(0xFFD4E0F1),
                     ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 14,
@@ -397,10 +366,7 @@ class _NotifikasiScreenState extends State<NotifikasiScreen> {
       onTap: () => navigateTo(index),
       borderRadius: BorderRadius.circular(25),
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 13,
-          vertical: 7,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
         decoration: BoxDecoration(
           color: active ? navy : Colors.transparent,
           borderRadius: BorderRadius.circular(25),
@@ -408,20 +374,14 @@ class _NotifikasiScreenState extends State<NotifikasiScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 18,
-              color: active ? yellow : blue,
-            ),
+            Icon(icon, size: 18, color: active ? yellow : blue),
             const SizedBox(height: 3),
             Text(
               title,
               style: TextStyle(
                 fontSize: 9,
                 color: active ? yellow : navy,
-                fontWeight: active
-                    ? FontWeight.bold
-                    : FontWeight.normal,
+                fontWeight: active ? FontWeight.bold : FontWeight.normal,
               ),
             ),
           ],

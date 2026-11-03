@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'live_screen.dart';
 import 'history_screen.dart';
@@ -48,9 +47,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> openNotifikasi() async {
     await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => const NotifikasiScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const NotifikasiScreen()),
     );
 
     if (!mounted) return;
@@ -62,9 +59,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => const LiveScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const LiveScreen()),
     );
 
     if (!mounted) return;
@@ -76,9 +71,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => const HistoryScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const HistoryScreen()),
     );
 
     if (!mounted) return;
@@ -165,10 +158,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 padding: const EdgeInsets.all(17),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFF0D2747),
-                      Color(0xFF08203D),
-                    ],
+                    colors: [Color(0xFF0D2747), Color(0xFF08203D)],
                   ),
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
@@ -270,9 +260,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         value: 11 / 21,
                         minHeight: 8,
                         backgroundColor: Color(0xFF40536A),
-                        valueColor: AlwaysStoppedAnimation(
-                          Color(0xFFFFDF72),
-                        ),
+                        valueColor: AlwaysStoppedAnimation(Color(0xFFFFDF72)),
                       ),
                     ),
                   ],
@@ -293,19 +281,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       color: Color(0xFF17395F),
                     ),
                   ),
-                  const Icon(
-                    Icons.sensors,
-                    color: Color(0xFF4779B7),
-                  ),
+                  const Icon(Icons.sensors, color: Color(0xFF4779B7)),
                 ],
               ),
               const SizedBox(height: 5),
               Text(
                 'Pembacaan sensor terakhir: $updateTime',
-                style: const TextStyle(
-                  color: Color(0xFF8493A9),
-                  fontSize: 10,
-                ),
+                style: const TextStyle(color: Color(0xFF8493A9), fontSize: 10),
               ),
               const SizedBox(height: 12),
 
@@ -338,10 +320,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 8),
               const Text(
                 '*Angka saat ini merupakan data contoh. Integrasi sensor ESP32 akan dilakukan selanjutnya.',
-                style: TextStyle(
-                  fontSize: 9,
-                  color: Color(0xFF8996A9),
-                ),
+                style: TextStyle(fontSize: 9, color: Color(0xFF8996A9)),
               ),
 
               const SizedBox(height: 22),
@@ -417,19 +396,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     SizedBox(
                       height: 115,
                       width: double.infinity,
-                      child: CustomPaint(
-                        painter: MonitoringChartPainter(),
-                      ),
+                      child: CustomPaint(painter: MonitoringChartPainter()),
                     ),
                     const SizedBox(height: 12),
                     const Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('00:00', style: TextStyle(fontSize: 9, color: Colors.blueGrey)),
-                        Text('04:00', style: TextStyle(fontSize: 9, color: Colors.blueGrey)),
-                        Text('08:00', style: TextStyle(fontSize: 9, color: Colors.blueGrey)),
-                        Text('12:00', style: TextStyle(fontSize: 9, color: Colors.blueGrey)),
-                        Text('16:00', style: TextStyle(fontSize: 9, color: Colors.blueGrey)),
+                        Text(
+                          '00:00',
+                          style: TextStyle(fontSize: 9, color: Colors.blueGrey),
+                        ),
+                        Text(
+                          '04:00',
+                          style: TextStyle(fontSize: 9, color: Colors.blueGrey),
+                        ),
+                        Text(
+                          '08:00',
+                          style: TextStyle(fontSize: 9, color: Colors.blueGrey),
+                        ),
+                        Text(
+                          '12:00',
+                          style: TextStyle(fontSize: 9, color: Colors.blueGrey),
+                        ),
+                        Text(
+                          '16:00',
+                          style: TextStyle(fontSize: 9, color: Colors.blueGrey),
+                        ),
                         Text(
                           'Sekarang',
                           style: TextStyle(
@@ -532,9 +524,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: const BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(22),
-          ),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
           boxShadow: [
             BoxShadow(
               color: Color(0x10000000),
@@ -617,10 +607,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 8),
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 10,
-              color: Color(0xFF60799F),
-            ),
+            style: const TextStyle(fontSize: 10, color: Color(0xFF60799F)),
           ),
           Text(
             count,
@@ -710,10 +697,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ],
                 ),
               ),
-              const Icon(
-                Icons.chevron_right,
-                color: Color(0xFF82A4D2),
-              ),
+              const Icon(Icons.chevron_right, color: Color(0xFF82A4D2)),
             ],
           ),
         ),
@@ -737,11 +721,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 19,
-              color: active ? yellow : blue,
-            ),
+            Icon(icon, size: 19, color: active ? yellow : blue),
             const SizedBox(height: 3),
             Text(
               title,
@@ -768,11 +748,7 @@ class MonitoringChartPainter extends CustomPainter {
 
     for (int i = 0; i < 4; i++) {
       final y = i * size.height / 3;
-      canvas.drawLine(
-        Offset(0, y),
-        Offset(size.width, y),
-        gridPaint,
-      );
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
     }
 
     final tempPaint = Paint()
@@ -788,13 +764,33 @@ class MonitoringChartPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     final tempPoints = [
-      0.38, 0.40, 0.34, 0.29, 0.34, 0.42,
-      0.39, 0.30, 0.26, 0.36, 0.44, 0.34,
+      0.38,
+      0.40,
+      0.34,
+      0.29,
+      0.34,
+      0.42,
+      0.39,
+      0.30,
+      0.26,
+      0.36,
+      0.44,
+      0.34,
     ];
 
     final humidityPoints = [
-      0.70, 0.65, 0.67, 0.61, 0.49, 0.55,
-      0.69, 0.72, 0.61, 0.44, 0.51, 0.60,
+      0.70,
+      0.65,
+      0.67,
+      0.61,
+      0.49,
+      0.55,
+      0.69,
+      0.72,
+      0.61,
+      0.44,
+      0.51,
+      0.60,
     ];
 
     final tempPath = Path();

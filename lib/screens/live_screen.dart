@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 class LiveScreen extends StatelessWidget {
@@ -22,10 +21,7 @@ class LiveScreen extends StatelessWidget {
         backgroundColor: navy,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back,
-            color: Colors.amber,
-          ),
+          icon: const Icon(Icons.arrow_back, color: Colors.amber),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
@@ -168,11 +164,7 @@ class LiveScreen extends StatelessWidget {
                         children: [
                           const Row(
                             children: [
-                              Icon(
-                                Icons.biotech,
-                                size: 13,
-                                color: navy,
-                              ),
+                              Icon(Icons.biotech, size: 13, color: navy),
                               SizedBox(width: 5),
                               Text(
                                 'Deskripsi Morfologi Vaskular',
@@ -212,9 +204,7 @@ class LiveScreen extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(14, 7, 14, 12),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-              ),
+              decoration: const BoxDecoration(color: Colors.white),
               child: SizedBox(
                 height: 46,
                 child: ElevatedButton.icon(
@@ -225,16 +215,10 @@ class LiveScreen extends StatelessWidget {
                       ),
                     );
                   },
-                  icon: const Icon(
-                    Icons.camera_alt_outlined,
-                    size: 16,
-                  ),
+                  icon: const Icon(Icons.camera_alt_outlined, size: 16),
                   label: const Text(
                     'Periksa Ulang Telur',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: darkNavy,

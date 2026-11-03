@@ -9,9 +9,12 @@ import 'package:hatch_care/core/constants/app_colors.dart';
 import 'package:hatch_care/features/auth/presentation/pages/login_page.dart';
 import 'package:hatch_care/features/auth/presentation/pages/register_page.dart';
 import 'package:hatch_care/features/auth/presentation/pages/syarat_ketentuan_page.dart';
+import 'package:hatch_care/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:hatch_care/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:hatch_care/features/splash/presentation/pages/splash_page.dart';
 
+/// Membungkus [page] dengan ProviderScope, MaterialApp.router, ukuran layar
+/// [size], dan text scale 1.5 — meniru kondisi perangkat kecil.
 Widget _buildTestableScreen(Widget page, {required Size size}) {
   final router = GoRouter(
     initialLocation: '/',
@@ -36,10 +39,13 @@ Widget _buildTestableScreen(Widget page, {required Size size}) {
         path: '/syarat-ketentuan',
         builder: (context, state) => const Scaffold(),
       ),
+      GoRoute(path: '/home', builder: (context, state) => const Scaffold()),
     ],
   );
 
-  return MaterialApp.router(theme: AppTheme.light, routerConfig: router);
+  return ProviderScope(
+    child: MaterialApp.router(theme: AppTheme.light, routerConfig: router),
+  );
 }
 
 void main() {
@@ -155,6 +161,22 @@ void main() {
           await tester.pump();
           expect(tester.takeException(), isNull);
           expect(find.text('Syarat Dan Ketentuan'), findsOneWidget);
+        });
+
+        testWidgets('DashboardPage tidak overflow', (tester) async {
+          tester.view.physicalSize = size;
+          tester.view.devicePixelRatio = 1.0;
+          addTearDown(() {
+            tester.view.resetPhysicalSize();
+            tester.view.resetDevicePixelRatio();
+          });
+
+          await tester.pumpWidget(
+            _buildTestableScreen(const DashboardPage(), size: size),
+          );
+          await tester.pump();
+          expect(tester.takeException(), isNull);
+          expect(find.text('Selamat Datang!'), findsOneWidget);
         });
       },
     );

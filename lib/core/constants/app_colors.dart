@@ -46,4 +46,18 @@ abstract final class AppColors {
 
   /// Biru sangat tua — aksen nomor S&K.
   static const Color primaryDark = Color(0xFF0B1B3A);
+
+  // --- Status ---
+
+  /// Titik hijau "Terhubung" pada kartu status inkubator.
+  /// Diambil secara visual dari design/screens/09_dashboard_1.png.
+  static const Color statusConnected = Color(0xFF52C472);
+
+  /// Teks badge sukses ("Stabil", "Ideal").
+  /// Diambil secara visual dari design/screens/09_dashboard_1.png.
+  static const Color badgeSuccessText = Color(0xFF1B6F40);
+
+  /// Latar belakang badge sukses ("Stabil", "Ideal").
+  /// Diambil secara visual dari design/screens/09_dashboard_1.png.
+  static const Color badgeSuccessBg = Color(0xFFE8F7EE);
 }

@@ -282,22 +282,12 @@ class _LoginPageState extends State<LoginPage> {
 
                               const SizedBox(height: AppSpacing.lg),
 
-                              // Tombol Masuk
+                              // Tombol Masuk — arahkan ke /home (sementara tanpa validasi)
                               SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton(
                                   onPressed: () {
-                                    if (_formKey.currentState!.validate()) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'Form login berhasil divalidasi.',
-                                          ),
-                                        ),
-                                      );
-                                    }
+                                    context.go('/home');
                                   },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: AppColors.tertiary,

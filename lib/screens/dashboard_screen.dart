@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'live_screen.dart';
 import 'history_screen.dart';
+import 'notifikasi_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -42,6 +43,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
         behavior: SnackBarBehavior.floating,
       ),
     );
+  }
+
+  Future<void> openNotifikasi() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const NotifikasiScreen(),
+      ),
+    );
+
+    if (!mounted) return;
+    setState(() => selectedIndex = 0);
   }
 
   Future<void> openLive() async {
@@ -126,14 +139,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ],
                     ),
                   ),
+
+                  // TOMBOL NOTIFIKASI
                   CircleAvatar(
                     radius: 22,
                     backgroundColor: const Color(0xFFFFF1BE),
                     child: IconButton(
-                      onPressed: () => showFeature('Notifikasi'),
+                      padding: EdgeInsets.zero,
+                      onPressed: openNotifikasi,
                       icon: const Icon(
                         Icons.notifications_none,
-                        color: Color(0xFF173D67),
+                        color: Color(0xFF0D3158),
+                        size: 23,
                       ),
                     ),
                   ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'live_screen.dart';
 import 'history_screen.dart';
 import 'notifikasi_screen.dart';
+import 'egg_check_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -78,6 +79,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() => selectedIndex = 0);
   }
 
+  Future<void> openEggCheck() async {
+    setState(() => selectedIndex = 2);
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const EggCheckScreen()),
+    );
+
+    if (!mounted) return;
+    setState(() => selectedIndex = 0);
+  }
+
   void handleNavigation(int index) {
     switch (index) {
       case 0:
@@ -87,8 +100,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         openLive();
         break;
       case 2:
-        setState(() => selectedIndex = 2);
-        showFeature('Egg Checking');
+        openEggCheck();
         break;
       case 3:
         openHistory();
@@ -503,8 +515,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 icon: Icons.lightbulb_outline,
                 title: 'Egg Checking',
                 subtitle: 'Periksa kondisi embrio melalui proses candling',
-                tag: 'SVM',
-                onTap: () => showFeature('Egg Checking'),
+                tag: 'AI Vision',
+                onTap: openEggCheck,
               ),
               const SizedBox(height: 9),
               featureTile(

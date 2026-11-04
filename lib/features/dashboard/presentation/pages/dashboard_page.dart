@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:hatch_care/core/constants/app_colors.dart';
 import 'package:hatch_care/core/constants/app_spacing.dart';
@@ -118,17 +119,21 @@ class _DashboardHeader extends StatelessWidget {
         ),
         const SizedBox(width: AppSpacing.sm),
         // Tombol notifikasi
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: AppColors.tertiary,
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(
-            Icons.notifications_outlined,
-            color: AppColors.primary,
-            size: 20,
+        InkWell(
+          onTap: () => context.push('/notifications'),
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+              color: AppColors.tertiary,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.notifications_outlined,
+              color: AppColors.primary,
+              size: 20,
+            ),
           ),
         ),
       ],

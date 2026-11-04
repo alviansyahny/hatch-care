@@ -4,10 +4,12 @@ import 'package:hatch_care/features/auth/presentation/pages/login_page.dart';
 import 'package:hatch_care/features/auth/presentation/pages/register_page.dart';
 import 'package:hatch_care/features/auth/presentation/pages/syarat_ketentuan_page.dart';
 import 'package:hatch_care/features/dashboard/presentation/pages/dashboard_page.dart';
-import 'package:hatch_care/features/egg_check/presentation/pages/egg_check_placeholder_page.dart';
+import 'package:hatch_care/features/egg_check/presentation/pages/egg_check_page.dart';
 import 'package:hatch_care/features/history/presentation/pages/history_page.dart';
-import 'package:hatch_care/features/live/presentation/pages/live_placeholder_page.dart';
+import 'package:hatch_care/features/live/presentation/pages/live_page.dart';
+import 'package:hatch_care/features/notification/presentation/pages/notification_page.dart';
 import 'package:hatch_care/features/onboarding/presentation/pages/onboarding_page.dart';
+import 'package:hatch_care/features/setting/presentation/pages/setting_page.dart';
 import 'package:hatch_care/features/shell/presentation/pages/main_shell_page.dart';
 import 'package:hatch_care/features/splash/presentation/pages/splash_page.dart';
 
@@ -20,9 +22,10 @@ import 'package:hatch_care/features/splash/presentation/pages/splash_page.dart';
 /// - `/register`        : RegisterPage
 /// - `/syarat-ketentuan`: SyaratKetentuanPage
 /// - `/home`            : DashboardPage       (branch 0, tab Home)
-/// - `/home/live`       : LivePlaceholderPage  (branch 1, tab Live)
-/// - `/home/egg-check`  : EggCheckPlaceholderPage (branch 2, tab Egg Check)
-/// - `/home/history`    : HistoryPlaceholderPage  (branch 3, tab History)
+/// - `/home/live`       : LivePage             (branch 1, tab Live)
+/// - `/home/egg-check`  : EggCheckPage        (branch 2, tab Egg Check)
+/// - `/home/history`    : HistoryPage          (branch 3, tab History)
+/// - `/home/setting`    : SettingPage          (branch 4, tab Setting)
 final GoRouter appRouter = GoRouter(
   initialLocation: '/',
   routes: [
@@ -40,6 +43,10 @@ final GoRouter appRouter = GoRouter(
       path: '/syarat-ketentuan',
       builder: (context, state) => const SyaratKetentuanPage(),
     ),
+    GoRoute(
+      path: '/notifications',
+      builder: (context, state) => const NotificationPage(),
+    ),
 
     // Shell dengan empat tab navigasi bawah
     StatefulShellRoute.indexedStack(
@@ -56,32 +63,42 @@ final GoRouter appRouter = GoRouter(
           ],
         ),
 
-        // Branch 1: Live (placeholder)
+        // Branch 1: Live
         StatefulShellBranch(
           routes: [
             GoRoute(
               path: '/home/live',
-              builder: (context, state) => const LivePlaceholderPage(),
+              builder: (context, state) => const LivePage(),
             ),
           ],
         ),
 
-        // Branch 2: Egg Check (placeholder)
+        // Branch 2: Egg Check
         StatefulShellBranch(
           routes: [
             GoRoute(
               path: '/home/egg-check',
-              builder: (context, state) => const EggCheckPlaceholderPage(),
+              builder: (context, state) => const EggCheckPage(),
             ),
           ],
         ),
 
-        // Branch 3: History (placeholder)
+        // Branch 3: History
         StatefulShellBranch(
           routes: [
             GoRoute(
               path: '/home/history',
               builder: (context, state) => const HistoryPage(),
+            ),
+          ],
+        ),
+
+        // Branch 4: Setting
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/home/setting',
+              builder: (context, state) => const SettingPage(),
             ),
           ],
         ),

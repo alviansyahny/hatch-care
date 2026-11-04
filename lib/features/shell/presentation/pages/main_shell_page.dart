@@ -63,6 +63,11 @@ const _kTabs = [
     icon: Icons.show_chart,
     activeIcon: Icons.show_chart,
   ),
+  _TabItem(
+    label: 'Setting',
+    icon: Icons.settings_outlined,
+    activeIcon: Icons.settings,
+  ),
 ];
 
 class _AppBottomNavBar extends StatelessWidget {

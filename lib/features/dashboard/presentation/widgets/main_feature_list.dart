@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:hatch_care/core/constants/app_colors.dart';
 import 'package:hatch_care/core/constants/app_spacing.dart';
@@ -55,7 +56,7 @@ class _FeatureItem extends StatelessWidget {
       child: InkWell(
         // Hanya aktif jika isActive == true
         onTap: isActive && feature.route != null
-            ? () {} // route navigasi akan ditambahkan saat layar tersedia
+            ? () => context.go(feature.route!)
             : null,
         borderRadius: BorderRadius.circular(16),
         child: Padding(

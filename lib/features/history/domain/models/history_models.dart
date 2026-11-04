@@ -4,28 +4,8 @@
 /// agar mudah diganti dengan data asli dari repository di tahap backend.
 library;
 
-// ---------------------------------------------------------------------------
-// Status telur
-// ---------------------------------------------------------------------------
-
-/// Status telur hasil proses candling.
-///
-/// Label tampilan diambil dari desain (design/screens/13_history.png).
-/// Gunakan [label] untuk mendapatkan teks sesuai Figma.
-enum EggStatus {
-  fertil,
-  infertil,
-  mortalitas;
-
-  /// Label tampilan yang sesuai dengan desain Figma.
-  String get label {
-    return switch (this) {
-      EggStatus.fertil => 'Fertile',
-      EggStatus.infertil => 'Infertile',
-      EggStatus.mortalitas => 'Mortalitas',
-    };
-  }
-}
+import 'package:hatch_care/core/enums/egg_status.dart';
+export 'package:hatch_care/core/enums/egg_status.dart';
 
 // ---------------------------------------------------------------------------
 // Record riwayat candling

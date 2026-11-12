@@ -379,15 +379,45 @@ class _DashboardPageState extends State<DashboardPage> {
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: const [
-                          Text('00:00', style: TextStyle(fontSize: 9, color: Colors.blueGrey)),
+                          Text(
+                            '00:00',
+                            style: TextStyle(
+                              fontSize: 9,
+                              color: Colors.blueGrey,
+                            ),
+                          ),
                           SizedBox(width: 16),
-                          Text('04:00', style: TextStyle(fontSize: 9, color: Colors.blueGrey)),
+                          Text(
+                            '04:00',
+                            style: TextStyle(
+                              fontSize: 9,
+                              color: Colors.blueGrey,
+                            ),
+                          ),
                           SizedBox(width: 16),
-                          Text('08:00', style: TextStyle(fontSize: 9, color: Colors.blueGrey)),
+                          Text(
+                            '08:00',
+                            style: TextStyle(
+                              fontSize: 9,
+                              color: Colors.blueGrey,
+                            ),
+                          ),
                           SizedBox(width: 16),
-                          Text('12:00', style: TextStyle(fontSize: 9, color: Colors.blueGrey)),
+                          Text(
+                            '12:00',
+                            style: TextStyle(
+                              fontSize: 9,
+                              color: Colors.blueGrey,
+                            ),
+                          ),
                           SizedBox(width: 16),
-                          Text('16:00', style: TextStyle(fontSize: 9, color: Colors.blueGrey)),
+                          Text(
+                            '16:00',
+                            style: TextStyle(
+                              fontSize: 9,
+                              color: Colors.blueGrey,
+                            ),
+                          ),
                           SizedBox(width: 16),
                           Text(
                             'Sekarang',

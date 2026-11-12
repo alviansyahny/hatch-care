@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderScope;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -12,6 +12,7 @@ import 'package:hatch_care/features/auth/presentation/pages/syarat_ketentuan_pag
 import 'package:hatch_care/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:hatch_care/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:hatch_care/features/splash/presentation/pages/splash_page.dart';
+import 'helpers/backend_test_fakes.dart';
 
 /// Membungkus [page] dengan ProviderScope, MaterialApp.router, ukuran layar
 /// [size], dan text scale 1.5 — meniru kondisi perangkat kecil.
@@ -43,7 +44,7 @@ Widget _buildTestableScreen(Widget page, {required Size size}) {
     ],
   );
 
-  return ProviderScope(
+  return backendOverriddenScope(
     child: MaterialApp.router(theme: AppTheme.light, routerConfig: router),
   );
 }

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:hatch_care/app/theme/app_theme.dart';
 import 'package:hatch_care/features/live/presentation/pages/live_page.dart';
 import 'package:hatch_care/features/live/presentation/widgets/live_candling_display.dart';
+import '../../helpers/backend_test_fakes.dart';
 
 Widget _buildTestableLiveScreen({required Size size, double textScale = 1.0}) {
   final router = GoRouter(
@@ -29,16 +29,13 @@ Widget _buildTestableLiveScreen({required Size size, double textScale = 1.0}) {
     ],
   );
 
-  return ProviderScope(
-    child: MaterialApp.router(
-      theme: AppTheme.light,
-      routerConfig: router,
-    ),
+  return backendOverriddenScope(
+    child: MaterialApp.router(theme: AppTheme.light, routerConfig: router),
   );
 }
 
 void main() {
-  testWidgets('LivePage menampilkan display kamera dan deskripsi morfologi', (
+  testWidgets('LivePage menampilkan feed kamera dan info monitoring', (
     WidgetTester tester,
   ) async {
     const size = Size(390, 844);
@@ -54,15 +51,15 @@ void main() {
 
     // Verifikasi judul dan timestamp
     expect(find.text('Live'), findsOneWidget);
-    expect(find.text('Hari ini, 14:15:22 WIB'), findsOneWidget);
+    expect(find.text('Menunggu tangkapan kamera...'), findsOneWidget);
 
     // Verifikasi display video dan tombol perbesar
     expect(find.byType(LiveCandlingDisplay), findsOneWidget);
     expect(find.text('Perbesar Foto'), findsOneWidget);
 
-    // Verifikasi status dan deskripsi
-    expect(find.text('FERTIL'), findsOneWidget);
-    expect(find.text('Deskripsi Morfologi Vaskular'), findsOneWidget);
+    // Verifikasi status dan info monitoring
+    expect(find.text('LIVE'), findsOneWidget);
+    expect(find.text('Monitoring Tray Inkubator'), findsOneWidget);
 
     // Verifikasi tombol periksa ulang
     expect(find.text('Periksa Ulang Telur'), findsOneWidget);

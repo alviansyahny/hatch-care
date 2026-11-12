@@ -73,10 +73,7 @@ class EggCheckTrayList extends StatelessWidget {
 }
 
 class _TrayItemCard extends StatelessWidget {
-  const _TrayItemCard({
-    required this.item,
-    required this.onTap,
-  });
+  const _TrayItemCard({required this.item, required this.onTap});
 
   final EggCheckTrayItem item;
   final VoidCallback onTap;
@@ -153,10 +150,7 @@ class _TrayItemCard extends StatelessWidget {
             // Teks status
             Text(
               item.statusLabel,
-              style: const TextStyle(
-                fontSize: 11,
-                color: AppColors.textMuted,
-              ),
+              style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
             ),
           ],
         ),
@@ -210,9 +204,7 @@ class _TrayItemCard extends StatelessWidget {
               stops: [0.0, 0.45, 0.75, 1.0],
             ),
           ),
-          child: CustomPaint(
-            painter: _MiniVeinPainter(),
-          ),
+          child: CustomPaint(painter: _MiniVeinPainter()),
         ),
 
         // Badge persentase keyakinan di pojok kanan bawah

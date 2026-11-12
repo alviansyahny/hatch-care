@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:hatch_care/app/theme/app_theme.dart';
 import 'package:hatch_care/features/egg_check/presentation/pages/egg_check_page.dart';
+import '../../helpers/backend_test_fakes.dart';
 
 Widget _buildTestableEggCheckScreen({
   required Size size,
@@ -27,11 +27,8 @@ Widget _buildTestableEggCheckScreen({
     ],
   );
 
-  return ProviderScope(
-    child: MaterialApp.router(
-      theme: AppTheme.light,
-      routerConfig: router,
-    ),
+  return backendOverriddenScope(
+    child: MaterialApp.router(theme: AppTheme.light, routerConfig: router),
   );
 }
 

@@ -289,10 +289,7 @@ class SettingPage extends StatelessWidget {
                   ),
                   child: const Text(
                     'Kembali',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   ),
                 ),
               ),
@@ -405,7 +402,10 @@ class SettingPage extends StatelessWidget {
             if (badge != null) ...[
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.tertiary,
                   borderRadius: BorderRadius.circular(12),

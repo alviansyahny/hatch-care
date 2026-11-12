@@ -6,10 +6,7 @@ import 'package:hatch_care/features/notification/domain/models/notification_item
 
 /// Kartu item notifikasi sesuai desain HATCH-CARE.
 class NotificationCard extends StatelessWidget {
-  const NotificationCard({
-    super.key,
-    required this.item,
-  });
+  const NotificationCard({super.key, required this.item});
 
   final NotificationItem item;
 
@@ -46,11 +43,7 @@ class NotificationCard extends StatelessWidget {
                   color: item.iconBgColor,
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(
-                  item.icon,
-                  color: item.iconColor,
-                  size: 24,
-                ),
+                child: Icon(item.icon, color: item.iconColor, size: 24),
               ),
               const SizedBox(width: AppSpacing.md),
 
@@ -125,11 +118,7 @@ class NotificationCard extends StatelessWidget {
           ),
 
           const SizedBox(height: AppSpacing.sm),
-          const Divider(
-            height: 1,
-            thickness: 0.8,
-            color: Color(0xFFF1F5F9),
-          ),
+          const Divider(height: 1, thickness: 0.8, color: Color(0xFFF1F5F9)),
           const SizedBox(height: AppSpacing.sm),
 
           // Footer: Waktu & Aksi
@@ -185,10 +174,7 @@ class NotificationCard extends StatelessWidget {
             ),
             child: Text(
               item.actionLabel ?? 'Lihat',
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
             ),
           ),
         );
@@ -210,10 +196,7 @@ class NotificationCard extends StatelessWidget {
             ),
             child: Text(
               item.actionLabel ?? 'Periksa',
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
             ),
           ),
         );
@@ -221,11 +204,7 @@ class NotificationCard extends StatelessWidget {
       case NotificationActionStyle.statusOnly:
         return Row(
           children: [
-            const Icon(
-              Icons.check,
-              size: 14,
-              color: Color(0xFF60A5FA),
-            ),
+            const Icon(Icons.check, size: 14, color: Color(0xFF60A5FA)),
             const SizedBox(width: 4),
             Text(
               item.statusLabel ?? 'Selesai',

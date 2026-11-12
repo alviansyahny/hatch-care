@@ -25,6 +25,23 @@ flutter pub get
 flutter run
 ```
 
+## Konfigurasi alamat server (backend IoT)
+
+Alamat server backend IoT hanya disimpan di SATU tempat:
+`lib/core/config/app_config.dart`.
+
+- Default (pengembangan): `https://iot.walker880.my.id` — TODO di file tersebut
+  mencatat bahwa default ini harus dicabut sebelum rilis.
+- Untuk memakai server lain, lewat `--dart-define` (tanpa mengubah kode):
+
+```bash
+flutter run --dart-define=API_BASE_URL=https://server-lain.com
+```
+
+Semua request jaringan melewati satu klien HTTP bersama
+(`lib/core/network/api_client.dart`), dipakai oleh repository tiap fitur
+(Egg Check, Live Monitoring, Dashboard) — layar tidak memanggil HTTP langsung.
+
 ## Struktur folder
 
 ```

@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:hatch_care/features/live/domain/models/incubator_models.dart';
+import 'package:hatch_care/features/live/presentation/providers/incubator_provider.dart';
+
 /// Halaman Dashboard HATCH-CARE sesuai tampilan dan tata letak versi tim backend.
-class DashboardPage extends StatefulWidget {
+///
+/// Data sensor nyata diambil dari backend IoT (provider inkubator yang sama
+/// dengan halaman Live — satu sumber polling, tidak ada HTTP di layar).
+class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
 
   @override
-  State<DashboardPage> createState() => _DashboardPageState();
+  ConsumerState<DashboardPage> createState() => _DashboardPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage> {
-  double temperature = 37.8;
-  double humidity = 60.0;
-
+class _DashboardPageState extends ConsumerState<DashboardPage> {
   late DateTime lastUpdate;
 
   final Color navy = const Color(0xFF0D3158);
@@ -41,8 +45,42 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  /// Titik grafik dari riwayat tangkapan (1 jam terakhir).
+  /// Suhu dinormalisasi dari rentang 36–39 °C, kelembapan dari 0–100%.
+  List<List<double>>? _buildChartPoints(IncubatorSnapshot snapshot) {
+    final entries = snapshot.history;
+    if (entries.length < 2) return null;
+    final points = <List<double>>[];
+    for (final entry in entries) {
+      final temp = entry.temperature;
+      final hum = entry.humidity;
+      if (temp == null || hum == null) continue;
+      points.add([
+        ((temp - 36) / 3).clamp(0.0, 1.0),
+        (hum / 100).clamp(0.0, 1.0),
+      ]);
+    }
+    if (points.length < 2) return null;
+    return points.reversed.toList();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final asyncSnapshot = ref.watch(incubatorLatestProvider);
+    final snapshot = asyncSnapshot.value ?? const IncubatorSnapshot.empty();
+
+    final lastData = snapshot.lastCaptureAt;
+    if (lastData != null && lastData.isAfter(lastUpdate)) {
+      lastUpdate = lastData;
+    }
+    final temperatureText = snapshot.temperature != null
+        ? '${snapshot.temperature!.toStringAsFixed(1)}°C'
+        : '--';
+    final humidityText = snapshot.humidity != null
+        ? '${snapshot.humidity!.toStringAsFixed(0)}%'
+        : '--';
+    final isConnected = snapshot.online;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FC),
       body: SafeArea(
@@ -151,20 +189,22 @@ class _DashboardPageState extends State<DashboardPage> {
                             color: Colors.white24,
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: const FittedBox(
+                          child: FittedBox(
                             fit: BoxFit.scaleDown,
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
                                   Icons.circle,
-                                  color: Color(0xFF42D994),
+                                  color: isConnected
+                                      ? const Color(0xFF42D994)
+                                      : const Color(0xFFEF4444),
                                   size: 8,
                                 ),
-                                SizedBox(width: 4),
+                                const SizedBox(width: 4),
                                 Text(
-                                  'Terhubung',
-                                  style: TextStyle(
+                                  isConnected ? 'Terhubung' : 'Terputus',
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 10,
                                   ),
@@ -259,7 +299,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   Expanded(
                     child: sensorCard(
                       title: 'Suhu Inkubator',
-                      value: '${temperature.toStringAsFixed(1)}°C',
+                      value: temperatureText,
                       icon: Icons.thermostat,
                       color: const Color(0xFF3976B8),
                       background: const Color(0xFFEAF3FF),
@@ -270,7 +310,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   Expanded(
                     child: sensorCard(
                       title: 'Kelembapan',
-                      value: '${humidity.toStringAsFixed(0)}%',
+                      value: humidityText,
                       icon: Icons.water_drop_outlined,
                       color: const Color(0xFFB38A23),
                       background: const Color(0xFFFFF5D9),
@@ -281,9 +321,13 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
 
               const SizedBox(height: 8),
-              const Text(
-                '*Angka saat ini merupakan data contoh. Integrasi sensor ESP32 akan dilakukan selanjutnya.',
-                style: TextStyle(fontSize: 9, color: Color(0xFF8996A9)),
+              Text(
+                isConnected
+                    ? '*Data sensor real-time dari backend IoT. '
+                          'Pembacaan diperbarui otomatis tiap 20 detik.'
+                    : '*Inkubator tidak terhubung — nilai "--" berarti sensor '
+                          'belum melapor. Data diperbarui otomatis tiap 20 detik.',
+                style: const TextStyle(fontSize: 9, color: Color(0xFF8996A9)),
               ),
 
               const SizedBox(height: 22),
@@ -372,7 +416,11 @@ class _DashboardPageState extends State<DashboardPage> {
                     SizedBox(
                       height: 115,
                       width: double.infinity,
-                      child: CustomPaint(painter: MonitoringChartPainter()),
+                      child: CustomPaint(
+                        painter: MonitoringChartPainter(
+                          points: _buildChartPoints(snapshot),
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 12),
                     SingleChildScrollView(
@@ -443,7 +491,9 @@ class _DashboardPageState extends State<DashboardPage> {
                     child: eggStat(
                       icon: Icons.grid_view_rounded,
                       title: 'Total Telur',
-                      count: '20',
+                      count: snapshot.totalEggs > 0
+                          ? '${snapshot.totalEggs}'
+                          : '--',
                       color: const Color(0xFFEAF1FF),
                     ),
                   ),
@@ -452,7 +502,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     child: eggStat(
                       icon: Icons.egg_alt,
                       title: 'Fertil',
-                      count: '10',
+                      count: '--',
                       color: const Color(0xFFFFF0B5),
                     ),
                   ),
@@ -461,7 +511,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     child: eggStat(
                       icon: Icons.egg_outlined,
                       title: 'Infertil',
-                      count: '10',
+                      count: '--',
                       color: const Color(0xFFDCE8FF),
                     ),
                   ),
@@ -700,6 +750,12 @@ class _DashboardPageState extends State<DashboardPage> {
 
 // CUSTOM GRAFIK MONITORING
 class MonitoringChartPainter extends CustomPainter {
+  MonitoringChartPainter({this.points});
+
+  /// Titik tren nyata (nilai ternormalisasi 0.0–1.0): [suhu, kelembapan].
+  /// null / < 2 titik → memakai garis bawaan agar tampilan tidak berubah.
+  final List<List<double>>? points;
+
   @override
   void paint(Canvas canvas, Size size) {
     final gridPaint = Paint()
@@ -753,13 +809,22 @@ class MonitoringChartPainter extends CustomPainter {
       0.60,
     ];
 
+    final realPoints = points;
+    final useReal = realPoints != null && realPoints.length >= 2;
+    final tempSeries = useReal
+        ? realPoints.map((p) => p[0]).toList()
+        : tempPoints;
+    final humSeries = useReal
+        ? realPoints.map((p) => p[1]).toList()
+        : humidityPoints;
+
     final tempPath = Path();
     final humidityPath = Path();
 
-    for (int i = 0; i < tempPoints.length; i++) {
-      final x = i * size.width / (tempPoints.length - 1);
-      final y1 = tempPoints[i] * size.height;
-      final y2 = humidityPoints[i] * size.height;
+    for (int i = 0; i < tempSeries.length; i++) {
+      final x = i * size.width / (tempSeries.length - 1);
+      final y1 = tempSeries[i] * size.height;
+      final y2 = humSeries[i] * size.height;
 
       if (i == 0) {
         tempPath.moveTo(x, y1);
@@ -774,13 +839,13 @@ class MonitoringChartPainter extends CustomPainter {
     canvas.drawPath(humidityPath, humidityPaint);
 
     canvas.drawCircle(
-      Offset(size.width, tempPoints.last * size.height),
+      Offset(size.width, tempSeries.last * size.height),
       3.5,
       Paint()..color = const Color(0xFF17395F),
     );
 
     canvas.drawCircle(
-      Offset(size.width, humidityPoints.last * size.height),
+      Offset(size.width, humSeries.last * size.height),
       3.5,
       Paint()..color = const Color(0xFFE2C34F),
     );
@@ -788,6 +853,14 @@ class MonitoringChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant MonitoringChartPainter oldDelegate) {
+    final old = oldDelegate.points;
+    final current = points;
+    if (old == null && current == null) return false;
+    if (old == null || current == null) return true;
+    if (old.length != current.length) return true;
+    for (int i = 0; i < current.length; i++) {
+      if (old[i][0] != current[i][0] || old[i][1] != current[i][1]) return true;
+    }
     return false;
   }
 }

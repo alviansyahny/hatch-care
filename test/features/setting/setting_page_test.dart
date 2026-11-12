@@ -6,7 +6,10 @@ import 'package:go_router/go_router.dart';
 import 'package:hatch_care/app/theme/app_theme.dart';
 import 'package:hatch_care/features/setting/presentation/pages/setting_page.dart';
 
-Widget _buildTestableSettingScreen({required Size size, double textScale = 1.0}) {
+Widget _buildTestableSettingScreen({
+  required Size size,
+  double textScale = 1.0,
+}) {
   final router = GoRouter(
     initialLocation: '/setting',
     routes: [
@@ -26,10 +29,7 @@ Widget _buildTestableSettingScreen({required Size size, double textScale = 1.0})
   );
 
   return ProviderScope(
-    child: MaterialApp.router(
-      theme: AppTheme.light,
-      routerConfig: router,
-    ),
+    child: MaterialApp.router(theme: AppTheme.light, routerConfig: router),
   );
 }
 

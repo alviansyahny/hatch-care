@@ -63,10 +63,7 @@ class NotificationPage extends StatelessWidget {
         backgroundColor: AppColors.primary,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back,
-            color: AppColors.tertiary,
-          ),
+          icon: const Icon(Icons.arrow_back, color: AppColors.tertiary),
           onPressed: () {
             if (context.canPop()) {
               context.pop();

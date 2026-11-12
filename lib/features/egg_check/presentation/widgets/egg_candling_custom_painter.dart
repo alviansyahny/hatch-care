@@ -95,16 +95,17 @@ class EggCandlingPainter extends CustomPainter {
       // Spot embrio (bayangan gelap di tengah)
       final embryoCenter = Offset(center.dx - 8, center.dy - 12);
       final embryoPaint = Paint()
-        ..shader = RadialGradient(
-          colors: [
-            const Color(0xFF261108).withValues(alpha: 0.85),
-            const Color(0xFF3E1E0F).withValues(alpha: 0.6),
-            Colors.transparent,
-          ],
-          stops: const [0.0, 0.55, 1.0],
-        ).createShader(
-          Rect.fromCircle(center: embryoCenter, radius: eggWidth * 0.28),
-        );
+        ..shader =
+            RadialGradient(
+              colors: [
+                const Color(0xFF261108).withValues(alpha: 0.85),
+                const Color(0xFF3E1E0F).withValues(alpha: 0.6),
+                Colors.transparent,
+              ],
+              stops: const [0.0, 0.55, 1.0],
+            ).createShader(
+              Rect.fromCircle(center: embryoCenter, radius: eggWidth * 0.28),
+            );
       canvas.drawCircle(embryoCenter, eggWidth * 0.28, embryoPaint);
 
       // Titik mata embrio (dark eye spot)
@@ -136,7 +137,13 @@ class EggCandlingPainter extends CustomPainter {
       ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke;
 
-    _drawDashedPath(canvas, eggPath, dashedOutlinePaint, dashLength: 6, gapLength: 4);
+    _drawDashedPath(
+      canvas,
+      eggPath,
+      dashedOutlinePaint,
+      dashLength: 6,
+      gapLength: 4,
+    );
 
     // 3. Garis lengkung "AIR CELL ZONE" di bagian atas telur
     final airCellPath = Path();
@@ -154,7 +161,13 @@ class EggCandlingPainter extends CustomPainter {
       ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke;
 
-    _drawDashedPath(canvas, airCellPath, airCellPaint, dashLength: 4, gapLength: 3);
+    _drawDashedPath(
+      canvas,
+      airCellPath,
+      airCellPaint,
+      dashLength: 4,
+      gapLength: 3,
+    );
 
     // 4. Crosshair Ticks (Kuning) pada 4 sisi
     final tickPaint = Paint()
@@ -270,7 +283,10 @@ class EggCandlingPainter extends CustomPainter {
       var distance = 0.0;
       while (distance < metric.length) {
         final currentDash = math.min(dashLength, metric.length - distance);
-        final extractPath = metric.extractPath(distance, distance + currentDash);
+        final extractPath = metric.extractPath(
+          distance,
+          distance + currentDash,
+        );
         canvas.drawPath(extractPath, paint);
         distance += currentDash + gapLength;
       }

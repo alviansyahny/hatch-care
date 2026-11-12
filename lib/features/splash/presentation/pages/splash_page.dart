@@ -1,27 +1,30 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:hatch_care/core/constants/app_assets.dart';
 import 'package:hatch_care/core/constants/app_colors.dart';
 import 'package:hatch_care/core/constants/app_spacing.dart';
 import 'package:hatch_care/core/constants/app_text_styles.dart';
+import 'package:hatch_care/features/auth/presentation/providers/auth_provider.dart';
 
 /// Layar splash HATCH-CARE.
 ///
 /// Alur:
 ///  1. Tampilkan logo di tengah layar kuning (splash 1).
 ///  2. Setelah 1,5 detik, logo naik & teks "HATCH-CARE" fade-in (splash 2).
-///  3. Setelah total ~3,5 detik, navigasi ke /onboarding.
-class SplashPage extends StatefulWidget {
+///  3. Setelah total ~3,5 detik, navigasi ke /home bila pengguna masih
+///     tercatat login, selain itu ke /onboarding.
+class SplashPage extends ConsumerStatefulWidget {
   const SplashPage({super.key});
 
   @override
-  State<SplashPage> createState() => _SplashPageState();
+  ConsumerState<SplashPage> createState() => _SplashPageState();
 }
 
-class _SplashPageState extends State<SplashPage>
+class _SplashPageState extends ConsumerState<SplashPage>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _textOpacity;
@@ -52,9 +55,11 @@ class _SplashPageState extends State<SplashPage>
       if (mounted) _controller.forward();
     });
 
-    // Setelah 3,5 detik navigasi ke onboarding.
+    // Setelah 3,5 detik navigasi: /home jika masih login, /onboarding jika tidak.
     _navigateTimer = Timer(const Duration(milliseconds: 3500), () {
-      if (mounted) context.go('/onboarding');
+      if (!mounted) return;
+      final session = ref.read(authSessionProvider);
+      context.go(session != null ? '/home' : '/onboarding');
     });
   }
 

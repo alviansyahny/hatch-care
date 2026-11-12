@@ -201,9 +201,7 @@ class EggCandlingViewfinder extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFF021733).withValues(alpha: 0.85),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.1),
-                ),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
               ),
               child: RichText(
                 text: TextSpan(

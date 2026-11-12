@@ -1,31 +1,57 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:hatch_care/core/constants/app_assets.dart';
 import 'package:hatch_care/core/constants/app_colors.dart';
 import 'package:hatch_care/core/constants/app_spacing.dart';
+import 'package:hatch_care/features/auth/presentation/providers/auth_provider.dart';
 
 /// Halaman login akun HATCH-CARE.
-class LoginPage extends StatefulWidget {
+class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  ConsumerState<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends ConsumerState<LoginPage> {
   final _formKey = GlobalKey<FormState>();
 
   final usernameController = TextEditingController();
   final passwordController = TextEditingController();
 
   bool obscurePassword = true;
+  bool isSubmitting = false;
 
   @override
   void dispose() {
     usernameController.dispose();
     passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate() || isSubmitting) return;
+    setState(() => isSubmitting = true);
+    try {
+      final session = await ref
+          .read(authRepositoryProvider)
+          .login(login: usernameController.text.trim(), password: passwordController.text);
+      await ref.read(authSessionProvider.notifier).setSession(session);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Selamat datang, ${session.user.name}!')),
+      );
+      context.go('/home');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    } finally {
+      if (mounted) setState(() => isSubmitting = false);
+    }
   }
 
   @override
@@ -282,13 +308,11 @@ class _LoginPageState extends State<LoginPage> {
 
                               const SizedBox(height: AppSpacing.lg),
 
-                              // Tombol Masuk — arahkan ke /home (sementara tanpa validasi)
+                              // Tombol Masuk — login ke backend lalu ke /home
                               SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton(
-                                  onPressed: () {
-                                    context.go('/home');
-                                  },
+                                  onPressed: isSubmitting ? null : _submit,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: AppColors.tertiary,
                                     foregroundColor: AppColors.primary,
@@ -300,20 +324,29 @@ class _LoginPageState extends State<LoginPage> {
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                   ),
-                                  child: const Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        'Masuk',
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600,
+                                  child: isSubmitting
+                                      ? const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.4,
+                                            color: AppColors.primary,
+                                          ),
+                                        )
+                                      : const Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              'Masuk',
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                            SizedBox(width: AppSpacing.sm),
+                                            Icon(Icons.arrow_forward, size: 17),
+                                          ],
                                         ),
-                                      ),
-                                      SizedBox(width: AppSpacing.sm),
-                                      Icon(Icons.arrow_forward, size: 17),
-                                    ],
-                                  ),
                                 ),
                               ),
                             ],

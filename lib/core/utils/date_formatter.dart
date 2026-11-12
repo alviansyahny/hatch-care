@@ -30,3 +30,20 @@ String formatTanggalSingkat(DateTime dateTime) {
   final menit = dateTime.minute.toString().padLeft(2, '0');
   return '$hari $bulan, $jam:$menit';
 }
+
+/// Memformat [dateTime] menjadi "Hari ini, HH:mm:ss WIB" bila hari ini,
+/// atau "d Mon yyyy, HH:mm:ss WIB" bila bukan.
+String formatTanggalWaktuWib(DateTime dateTime) {
+  final now = DateTime.now();
+  final isToday =
+      dateTime.year == now.year &&
+      dateTime.month == now.month &&
+      dateTime.day == now.day;
+  final timeStr =
+      '${dateTime.hour.toString().padLeft(2, '0')}:'
+      '${dateTime.minute.toString().padLeft(2, '0')}:'
+      '${dateTime.second.toString().padLeft(2, '0')} WIB';
+  if (isToday) return 'Hari ini, $timeStr';
+  final bulan = _bulanPendek[dateTime.month - 1];
+  return '${dateTime.day} $bulan ${dateTime.year}, $timeStr';
+}

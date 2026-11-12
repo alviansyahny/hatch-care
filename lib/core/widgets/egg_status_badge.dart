@@ -85,4 +85,3 @@ class EggStatusBadge extends StatelessWidget {
     );
   }
 }
-

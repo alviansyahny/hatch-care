@@ -1,301 +1,78 @@
-import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:http/http.dart' as http;
+
+import 'package:hatch_care/core/constants/app_colors.dart';
+import 'package:hatch_care/core/network/api_exception.dart';
+import 'package:hatch_care/features/egg_check/domain/models/candling_job_models.dart';
+import 'package:hatch_care/features/egg_check/presentation/providers/egg_check_backend_provider.dart';
 
 /// Layar Egg Checking terintegrasi dengan backend IoT ESP32 & AI Candling.
-class EggCheckPage extends StatefulWidget {
+///
+/// Semua jaringan lewat repository (tidak ada HTTP di layar):
+/// - Status perangkat: [eggDeviceStatusProvider] (polling 5 detik).
+/// - Riwayat tangkapan: [eggCaptureHistoryProvider].
+/// - Proses capture: [eggCaptureProvider] (polling job 1,5 detik).
+class EggCheckPage extends ConsumerStatefulWidget {
   const EggCheckPage({super.key});
 
   @override
-  State<EggCheckPage> createState() => _EggCheckPageState();
+  ConsumerState<EggCheckPage> createState() => _EggCheckPageState();
 }
 
-class _EggCheckPageState extends State<EggCheckPage> {
-  static const String baseUrl = 'https://iot.walker880.my.id';
-
-  final Color navy = const Color(0xFF0D3158);
-  final Color blue = const Color(0xFF315F9B);
-  final Color yellow = const Color(0xFFFFDF72);
-  final Color bgLight = const Color(0xFFF7F9FC);
-
-  // Status Perangkat ESP32
-  bool isDeviceOnline = false;
-  int? rssi;
-  int? lastSeenSec;
-  Timer? statusTimer;
-
+class _EggCheckPageState extends ConsumerState<EggCheckPage> {
   // Parameter Capture
   double exposure = 500;
   double gain = 0;
   double quality = 6;
   double delayMs = 250;
 
-  // State Job Capture
-  bool isCapturing = false;
-  String jobStatusMessage = '';
-  int elapsedSeconds = 0;
-  Timer? jobPollTimer;
-  Timer? elapsedTimer;
-
   // Hasil Analisis Terpilih
-  Uint8List? mainImageBytes;
-  String? predictionLabel;
-  double? confidence;
-  Map<String, dynamic>? probabilitas;
-  String? llmAnalysis;
-  Map<String, Uint8List> cvStages = {};
   String selectedStageTitle = 'Foto Asli (Candling)';
-
-  // History List
-  List<dynamic> historyList = [];
-  bool isLoadingHistory = false;
-
-  @override
-  void initState() {
-    super.initState();
-    fetchDeviceStatus();
-    statusTimer = Timer.periodic(
-      const Duration(seconds: 5),
-      (_) => fetchDeviceStatus(),
-    );
-    fetchHistory();
-  }
-
-  @override
-  void dispose() {
-    statusTimer?.cancel();
-    jobPollTimer?.cancel();
-    elapsedTimer?.cancel();
-    super.dispose();
-  }
-
-  Uint8List? _parseBase64(String? dataUri) {
-    if (dataUri == null || dataUri.isEmpty) return null;
-    try {
-      final clean = dataUri.contains(',') ? dataUri.split(',').last : dataUri;
-      return base64Decode(clean);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Future<void> fetchDeviceStatus() async {
-    try {
-      final res = await http
-          .get(Uri.parse('$baseUrl/egg/status'))
-          .timeout(const Duration(seconds: 4));
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        if (mounted) {
-          setState(() {
-            isDeviceOnline = data['online'] == true;
-            rssi = data['rssi'];
-            lastSeenSec = data['last_seen_sec'];
-          });
-        }
-      }
-    } catch (_) {}
-  }
-
-  Future<void> fetchHistory() async {
-    setState(() => isLoadingHistory = true);
-    try {
-      final res = await http
-          .get(Uri.parse('$baseUrl/egg/history'))
-          .timeout(const Duration(seconds: 8));
-      if (res.statusCode == 200) {
-        final list = jsonDecode(res.body);
-        if (mounted) {
-          setState(() {
-            historyList = list is List ? list : [];
-            isLoadingHistory = false;
-          });
-        }
-      }
-    } catch (_) {
-      if (mounted) setState(() => isLoadingHistory = false);
-    }
-  }
-
-  Future<void> loadJobDetail(int jobId) async {
-    try {
-      final res = await http
-          .get(Uri.parse('$baseUrl/egg/job/$jobId'))
-          .timeout(const Duration(seconds: 10));
-      if (res.statusCode == 200) {
-        final job = jsonDecode(res.body);
-        _applyJobData(job);
-      }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal memuat detail job #$jobId: $e')),
-      );
-    }
-  }
-
-  void _applyJobData(Map<String, dynamic> job) {
-    final rawUrl = job['url'] as String?;
-    final pred = job['prediction_result'] as Map<String, dynamic>?;
-
-    final Map<String, Uint8List> stages = {};
-    if (pred != null && pred['visualisasi'] != null) {
-      final vis = pred['visualisasi'] as Map<String, dynamic>;
-      if (vis['citra_crop'] != null) {
-        final b = _parseBase64(vis['citra_crop']);
-        if (b != null) stages['1. Crop Telur'] = b;
-      }
-      if (vis['citra_biner_roi'] != null) {
-        final b = _parseBase64(vis['citra_biner_roi']);
-        if (b != null) stages['2. ROI Biner'] = b;
-      }
-      if (vis['citra_rekonstruksi_rgb'] != null) {
-        final b = _parseBase64(vis['citra_rekonstruksi_rgb']);
-        if (b != null) stages['3. Masked RGB'] = b;
-      }
-      if (vis['citra_peta_darah'] != null) {
-        final b = _parseBase64(vis['citra_peta_darah']);
-        if (b != null) stages['4. Peta Darah'] = b;
-      }
-      if (vis['citra_jaringan_darah'] != null) {
-        final b = _parseBase64(vis['citra_jaringan_darah']);
-        if (b != null) stages['5. Vaskular'] = b;
-      }
-    }
-
-    setState(() {
-      mainImageBytes = _parseBase64(rawUrl);
-      selectedStageTitle = 'Foto Asli (Candling)';
-      predictionLabel = job['prediction_label'] ?? pred?['label'];
-      confidence = (job['confidence'] ?? pred?['keyakinan'])?.toDouble();
-      probabilitas = pred?['probabilitas'];
-      llmAnalysis = job['llm_analysis'];
-      cvStages = stages;
-    });
-  }
-
-  Future<void> startCapture() async {
-    setState(() {
-      isCapturing = true;
-      jobStatusMessage = 'Mengirim perintah ambil foto ke server...';
-      elapsedSeconds = 0;
-    });
-
-    elapsedTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() => elapsedSeconds++);
-    });
-
-    try {
-      final res = await http.post(
-        Uri.parse('$baseUrl/egg/capture'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'exposure': exposure.toInt(),
-          'gain': gain.toInt(),
-          'quality': quality.toInt(),
-          'settle_ms': delayMs.toInt(),
-        }),
-      ).timeout(const Duration(seconds: 10));
-
-      if (res.statusCode != 200) {
-        _finishCapture(
-          false,
-          'Gagal membuat job capture di server (${res.statusCode})',
-        );
-        return;
-      }
-
-      final body = jsonDecode(res.body);
-      final int jobId = body['job'];
-
-      jobPollTimer = Timer.periodic(
-        const Duration(milliseconds: 1500),
-        (timer) async {
-          if (elapsedSeconds > 65) {
-            timer.cancel();
-            _finishCapture(false, 'Waktu habis menunggu respons ESP32.');
-            return;
-          }
-
-          try {
-            final pollRes =
-                await http.get(Uri.parse('$baseUrl/egg/job/$jobId'));
-            if (pollRes.statusCode == 200) {
-              final job = jsonDecode(pollRes.body);
-              final status = job['status'];
-
-              if (status == 'pending') {
-                if (mounted) {
-                  setState(() =>
-                      jobStatusMessage = 'Menunggu ESP32 mengambil tugas...');
-                }
-              } else if (status == 'taken') {
-                if (mounted) {
-                  setState(() => jobStatusMessage =
-                      'ESP32 sedang memotret & mengekstrak citra...');
-                }
-              } else if (status == 'done') {
-                timer.cancel();
-                _finishCapture(
-                    true, 'Pengambilan Foto & Analisis AI Selesai!');
-                _applyJobData(job);
-                fetchHistory();
-              } else if (status == 'failed') {
-                timer.cancel();
-                _finishCapture(
-                  false,
-                  'Proses pengambilan foto gagal di perangkat ESP32.',
-                );
-              }
-            }
-          } catch (_) {}
-        },
-      );
-    } catch (e) {
-      _finishCapture(false, 'Kesalahan koneksi: $e');
-    }
-  }
-
-  void _finishCapture(bool success, String message) {
-    jobPollTimer?.cancel();
-    elapsedTimer?.cancel();
-    if (mounted) {
-      setState(() {
-        isCapturing = false;
-        jobStatusMessage = message;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor:
-              success ? Colors.green.shade700 : Colors.red.shade700,
-        ),
-      );
-    }
-  }
-
-  Color _getBadgeColor(String? label) {
-    switch (label?.toLowerCase()) {
-      case 'fertil':
-        return const Color(0xFF2CA02C);
-      case 'infertil':
-        return const Color(0xFF1F77B4);
-      case 'mortal':
-        return const Color(0xFFD62728);
-      default:
-        return Colors.grey.shade700;
-    }
-  }
+  String? selectedImageBase64;
+  EggCaptureDetail? selectedResult;
+  EggCaptureDetail? _appliedCaptureResult;
 
   @override
   Widget build(BuildContext context) {
+    final deviceStatus = ref.watch(eggDeviceStatusProvider);
+    final history = ref.watch(eggCaptureHistoryProvider);
+    final capture = ref.watch(eggCaptureProvider);
+
+    // Hasil capture yang baru selesai otomatis tampil di preview + snackbar.
+    ref.listen(eggCaptureProvider, (previous, next) {
+      final result = next.value?.result;
+      if (result != null && !identical(result, _appliedCaptureResult)) {
+        _appliedCaptureResult = result;
+        setState(() {
+          selectedResult = result;
+          selectedImageBase64 = result.mainImageBase64;
+          selectedStageTitle = 'Foto Asli (Candling)';
+        });
+      }
+      final wasCapturing = previous?.value?.isCapturing ?? false;
+      final isCapturing = next.value?.isCapturing ?? false;
+      final message = next.value?.statusMessage ?? '';
+      if (wasCapturing && !isCapturing && message.isNotEmpty) {
+        final success = message.contains('Selesai');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: success
+                ? Colors.green.shade700
+                : Colors.red.shade700,
+          ),
+        );
+      }
+    });
+
     return Scaffold(
-      backgroundColor: bgLight,
+      backgroundColor: AppColors.pageBackground,
       appBar: AppBar(
-        backgroundColor: navy,
+        backgroundColor: AppColors.deepNavy,
         elevation: 0,
         centerTitle: true,
         title: const Text(
@@ -324,10 +101,10 @@ class _EggCheckPageState extends State<EggCheckPage> {
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
             onPressed: () {
-              fetchDeviceStatus();
-              fetchHistory();
+              ref.read(eggDeviceStatusProvider.notifier).refresh();
+              ref.read(eggCaptureHistoryProvider.notifier).refresh();
             },
-          )
+          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -336,7 +113,7 @@ class _EggCheckPageState extends State<EggCheckPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Status Device Card
-            _buildDeviceStatusCard(),
+            _buildDeviceStatusCard(deviceStatus),
             const SizedBox(height: 14),
 
             // Preview & Hasil AI Card
@@ -344,17 +121,20 @@ class _EggCheckPageState extends State<EggCheckPage> {
             const SizedBox(height: 16),
 
             // 5 Tahapan Computer Vision Gallery
-            if (cvStages.isNotEmpty) ...[
-              _buildCvStagesSection(),
+            if (selectedResult != null &&
+                selectedResult!.stages.isNotEmpty) ...[
+              _buildCvStagesSection(selectedResult!.stages),
               const SizedBox(height: 16),
             ],
 
             // Pengaturan Kamera & Tombol Capture
-            _buildCameraControlCard(),
+            _buildCameraControlCard(
+              capture.value ?? const EggCaptureState.initial(),
+            ),
             const SizedBox(height: 20),
 
             // Riwayat Tangkapan Terakhir
-            _buildHistorySection(),
+            _buildHistorySection(history),
             const SizedBox(height: 30),
           ],
         ),
@@ -362,18 +142,46 @@ class _EggCheckPageState extends State<EggCheckPage> {
     );
   }
 
-  Widget _buildDeviceStatusCard() {
+  Uint8List? _decodeBase64(String? dataUri) {
+    if (dataUri == null || dataUri.isEmpty) return null;
+    try {
+      final clean = dataUri.contains(',') ? dataUri.split(',').last : dataUri;
+      return base64Decode(clean);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Color _getBadgeColor(String? label) {
+    switch (label?.toLowerCase()) {
+      case 'fertil':
+        return AppColors.badgeFertil;
+      case 'infertil':
+        return AppColors.badgeInfertil;
+      case 'mortal':
+        return AppColors.badgeMortal;
+      default:
+        return Colors.grey.shade700;
+    }
+  }
+
+  Widget _buildDeviceStatusCard(AsyncValue<EggDeviceStatus> asyncStatus) {
+    final status = asyncStatus.value ?? const EggDeviceStatus(online: false);
+    final isDeviceOnline = status.online;
+    final rssi = status.rssi;
+    final lastSeenSec = status.lastSeenSec;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
+        border: Border.all(color: AppColors.slateBorder),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x0A000000),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 6,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -385,8 +193,8 @@ class _EggCheckPageState extends State<EggCheckPage> {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: isDeviceOnline
-                  ? const Color(0xFF10B981)
-                  : const Color(0xFFEF4444),
+                  ? AppColors.statusOnline
+                  : AppColors.statusOffline,
             ),
           ),
           const SizedBox(width: 10),
@@ -399,50 +207,74 @@ class _EggCheckPageState extends State<EggCheckPage> {
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
                 color: isDeviceOnline
-                    ? const Color(0xFF047857)
-                    : const Color(0xFFB91C1C),
+                    ? AppColors.statusOnlineText
+                    : AppColors.statusOfflineText,
               ),
             ),
           ),
           if (rssi != null) ...[
             const SizedBox(width: 6),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.wifi, size: 14, color: Color(0xFF64748B)),
-                const SizedBox(width: 4),
-                Text(
-                  '$rssi dBm',
-                  style:
-                      const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-                ),
-              ],
+            Flexible(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.wifi, size: 14, color: AppColors.textSlate),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      '$rssi dBm',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textSlate,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
           if (lastSeenSec != null) ...[
             const SizedBox(width: 6),
-            Text(
-              '${lastSeenSec}s lalu',
-              style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+            Flexible(
+              child: Text(
+                '${lastSeenSec}s lalu',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textSlateLight,
+                ),
+              ),
             ),
-          ]
+          ],
         ],
       ),
     );
   }
 
   Widget _buildPreviewAndAiCard() {
+    final result = selectedResult;
+    final predictionLabel = result?.label;
+    final confidence = result?.confidence;
+    final probabilities = result?.probabilities ?? const <String, double>{};
+    final llmAnalysis = result?.llmAnalysis;
+    final mainImage = _decodeBase64(
+      selectedImageBase64 ?? result?.mainImageBase64,
+    );
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
+        border: Border.all(color: AppColors.slateBorder),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x0A000000),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
-            offset: Offset(0, 3),
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -457,24 +289,26 @@ class _EggCheckPageState extends State<EggCheckPage> {
                   selectedStageTitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: navy,
+                    color: AppColors.deepNavy,
                   ),
                 ),
               ),
               if (predictionLabel != null) ...[
                 const SizedBox(width: 8),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: _getBadgeColor(predictionLabel),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    predictionLabel!.toUpperCase(),
+                    predictionLabel.toUpperCase(),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 11,
@@ -492,33 +326,34 @@ class _EggCheckPageState extends State<EggCheckPage> {
             height: 240,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: const Color(0xFF0B132B),
+              color: AppColors.candlingDark,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFCBD5E1)),
+              border: Border.all(color: AppColors.candlingFrame),
             ),
-            child: mainImageBytes != null
+            child: mainImage != null
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(10),
                     child: Image.memory(
-                      mainImageBytes!,
+                      mainImage,
                       fit: BoxFit.contain,
                       width: double.infinity,
+                      cacheWidth: 900,
                     ),
                   )
                 : const Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.egg_outlined,
-                            size: 48, color: Colors.white30),
+                        Icon(
+                          Icons.egg_outlined,
+                          size: 48,
+                          color: Colors.white30,
+                        ),
                         SizedBox(height: 8),
                         Text(
                           'Belum ada tangkapan citra.\nTekan tombol Ambil Foto di bawah.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.white70,
-                          ),
+                          style: TextStyle(fontSize: 12, color: Colors.white70),
                         ),
                       ],
                     ),
@@ -528,87 +363,104 @@ class _EggCheckPageState extends State<EggCheckPage> {
           // Detail Keyakinan Model NN
           if (confidence != null) ...[
             const SizedBox(height: 14),
-            Row(
+            const Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Keyakinan Model (Confidence):',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                ),
                 Text(
-                  '${(confidence! * 100).toStringAsFixed(1)}%',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: blue,
-                  ),
+                  'Keyakinan Model (Confidence):',
+                  style: TextStyle(fontSize: 12, color: AppColors.textSlate),
                 ),
               ],
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                '${(confidence * 100).toStringAsFixed(1)}%',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.blueAccent,
+                ),
+              ),
             ),
             const SizedBox(height: 6),
             ClipRRect(
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
-                value: confidence!,
-                backgroundColor: const Color(0xFFE2E8F0),
-                valueColor: AlwaysStoppedAnimation<Color>(blue),
+                value: confidence.clamp(0.0, 1.0),
+                backgroundColor: AppColors.slateBorder,
+                valueColor: const AlwaysStoppedAnimation<Color>(
+                  AppColors.blueAccent,
+                ),
                 minHeight: 6,
               ),
             ),
           ],
 
           // Breakdown Probabilitas
-          if (probabilitas != null) ...[
+          if (probabilities.isNotEmpty) ...[
             const SizedBox(height: 12),
             Row(
               children: [
-                _buildProbChip('Fertil', probabilitas!['fertil'],
-                    const Color(0xFF2CA02C)),
-                const SizedBox(width: 8),
-                _buildProbChip('Infertil', probabilitas!['infertil'],
-                    const Color(0xFF1F77B4)),
+                _buildProbChip(
+                  'Fertil',
+                  probabilities['fertil'],
+                  AppColors.badgeFertil,
+                ),
                 const SizedBox(width: 8),
                 _buildProbChip(
-                    'Mortal', probabilitas!['mortal'], const Color(0xFFD62728)),
+                  'Infertil',
+                  probabilities['infertil'],
+                  AppColors.badgeInfertil,
+                ),
+                const SizedBox(width: 8),
+                _buildProbChip(
+                  'Mortal',
+                  probabilities['mortal'],
+                  AppColors.badgeMortal,
+                ),
               ],
             ),
           ],
 
           // Penjelasan LLM Vision
-          if (llmAnalysis != null && llmAnalysis!.isNotEmpty) ...[
+          if (llmAnalysis != null && llmAnalysis.isNotEmpty) ...[
             const SizedBox(height: 14),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFF0FDF4),
+                color: AppColors.expertBoxBackground,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFBBF7D0)),
+                border: Border.all(color: AppColors.expertBoxBorder),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Row(
                     children: [
-                      Icon(Icons.auto_awesome,
-                          size: 16, color: Color(0xFF15803D)),
+                      Icon(
+                        Icons.auto_awesome,
+                        size: 16,
+                        color: AppColors.expertGreen,
+                      ),
                       SizedBox(width: 6),
                       Text(
                         'Analisis Pakar AI (LLM Vision)',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF15803D),
+                          color: AppColors.expertGreen,
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    llmAnalysis!,
+                    llmAnalysis,
                     style: const TextStyle(
                       fontSize: 12,
                       height: 1.5,
-                      color: Color(0xFF1F2937),
+                      color: AppColors.expertText,
                     ),
                   ),
                 ],
@@ -620,15 +472,15 @@ class _EggCheckPageState extends State<EggCheckPage> {
     );
   }
 
-  Widget _buildProbChip(String label, dynamic val, Color color) {
-    final double pct = (val is num ? val.toDouble() : 0.0) * 100;
+  Widget _buildProbChip(String label, double? val, Color color) {
+    final double pct = (val ?? 0.0) * 100;
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 6),
         decoration: BoxDecoration(
-          color: bgLight,
+          color: AppColors.pageBackground,
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          border: Border.all(color: AppColors.slateBorder),
         ),
         child: Column(
           children: [
@@ -643,10 +495,7 @@ class _EggCheckPageState extends State<EggCheckPage> {
             const SizedBox(height: 2),
             Text(
               '${pct.toStringAsFixed(1)}%',
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -654,13 +503,13 @@ class _EggCheckPageState extends State<EggCheckPage> {
     );
   }
 
-  Widget _buildCvStagesSection() {
+  Widget _buildCvStagesSection(List<CandlingStage> stages) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.slateBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -670,7 +519,7 @@ class _EggCheckPageState extends State<EggCheckPage> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF334155),
+              color: AppColors.sectionLabel,
             ),
           ),
           const SizedBox(height: 10),
@@ -678,13 +527,13 @@ class _EggCheckPageState extends State<EggCheckPage> {
             height: 90,
             child: ListView(
               scrollDirection: Axis.horizontal,
-              children: cvStages.entries.map((entry) {
-                final isSelected = selectedStageTitle == entry.key;
+              children: stages.map((stage) {
+                final isSelected = selectedStageTitle == stage.title;
                 return GestureDetector(
                   onTap: () {
                     setState(() {
-                      selectedStageTitle = entry.key;
-                      mainImageBytes = entry.value;
+                      selectedStageTitle = stage.title;
+                      selectedImageBase64 = stage.imageBase64;
                     });
                   },
                   child: Container(
@@ -693,7 +542,9 @@ class _EggCheckPageState extends State<EggCheckPage> {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: isSelected ? blue : const Color(0xFFE2E8F0),
+                        color: isSelected
+                            ? AppColors.blueAccent
+                            : AppColors.slateBorder,
                         width: isSelected ? 2 : 1,
                       ),
                     ),
@@ -705,53 +556,65 @@ class _EggCheckPageState extends State<EggCheckPage> {
                             borderRadius: const BorderRadius.vertical(
                               top: Radius.circular(7),
                             ),
-                            child: Image.memory(entry.value, fit: BoxFit.cover),
+                            child: Image.memory(
+                              _decodeBase64(stage.imageBase64) ?? Uint8List(0),
+                              fit: BoxFit.cover,
+                              cacheWidth: 300,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(color: AppColors.candlingDarkDeep),
+                            ),
                           ),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(vertical: 3),
-                          color: isSelected ? blue : bgLight,
+                          color: isSelected
+                              ? AppColors.blueAccent
+                              : AppColors.pageBackground,
                           child: Text(
-                            entry.key.split('. ').last,
+                            stage.title,
                             textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 9,
                               fontWeight: FontWeight.bold,
                               color: isSelected
                                   ? Colors.white
-                                  : const Color(0xFF475569),
+                                  : AppColors.textSlateDark,
                             ),
                           ),
-                        )
+                        ),
                       ],
                     ),
                   ),
                 );
               }).toList(),
             ),
-          )
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildCameraControlCard() {
+  Widget _buildCameraControlCard(EggCaptureState capture) {
+    final isCapturing = capture.isCapturing;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.slateBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'Pengaturan Kamera & Relay Candling',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: navy,
+              color: AppColors.deepNavy,
             ),
           ),
           const SizedBox(height: 12),
@@ -761,6 +624,7 @@ class _EggCheckPageState extends State<EggCheckPage> {
             exposure,
             0,
             1200,
+            isCapturing,
             (v) => setState(() => exposure = v),
           ),
           _buildSliderRow(
@@ -768,6 +632,7 @@ class _EggCheckPageState extends State<EggCheckPage> {
             gain,
             0,
             30,
+            isCapturing,
             (v) => setState(() => gain = v),
           ),
           _buildSliderRow(
@@ -775,6 +640,7 @@ class _EggCheckPageState extends State<EggCheckPage> {
             quality,
             4,
             15,
+            isCapturing,
             (v) => setState(() => quality = v),
           ),
           _buildSliderRow(
@@ -782,6 +648,7 @@ class _EggCheckPageState extends State<EggCheckPage> {
             delayMs,
             100,
             3000,
+            isCapturing,
             (v) => setState(() => delayMs = v),
           ),
 
@@ -792,9 +659,20 @@ class _EggCheckPageState extends State<EggCheckPage> {
             width: double.infinity,
             height: 46,
             child: ElevatedButton(
-              onPressed: isCapturing ? null : startCapture,
+              onPressed: isCapturing
+                  ? null
+                  : () => ref
+                        .read(eggCaptureProvider.notifier)
+                        .start(
+                          CaptureParams(
+                            exposure: exposure.toInt(),
+                            gain: gain.toInt(),
+                            quality: quality.toInt(),
+                            settleMs: delayMs.toInt(),
+                          ),
+                        ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: navy,
+                backgroundColor: AppColors.deepNavy,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -817,7 +695,7 @@ class _EggCheckPageState extends State<EggCheckPage> {
                           ),
                           const SizedBox(width: 10),
                           Text(
-                            'Memproses (${elapsedSeconds}s)...',
+                            'Memproses (${capture.elapsedSeconds}s)...',
                             style: const TextStyle(fontSize: 13),
                           ),
                         ],
@@ -846,15 +724,15 @@ class _EggCheckPageState extends State<EggCheckPage> {
           if (isCapturing) ...[
             const SizedBox(height: 10),
             Text(
-              jobStatusMessage,
+              capture.statusMessage,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 11,
-                color: blue,
+                color: AppColors.blueAccent,
                 fontWeight: FontWeight.w600,
               ),
             ),
-          ]
+          ],
         ],
       ),
     );
@@ -865,6 +743,7 @@ class _EggCheckPageState extends State<EggCheckPage> {
     double val,
     double min,
     double max,
+    bool isCapturing,
     ValueChanged<double> onChanged,
   ) {
     return Padding(
@@ -877,7 +756,7 @@ class _EggCheckPageState extends State<EggCheckPage> {
               '$title (${val.toInt()}):',
               style: const TextStyle(
                 fontSize: 11,
-                color: Color(0xFF475569),
+                color: AppColors.textSlateDark,
               ),
             ),
           ),
@@ -886,8 +765,8 @@ class _EggCheckPageState extends State<EggCheckPage> {
               value: val,
               min: min,
               max: max,
-              activeColor: blue,
-              inactiveColor: const Color(0xFFE2E8F0),
+              activeColor: AppColors.blueAccent,
+              inactiveColor: AppColors.slateBorder,
               onChanged: isCapturing ? null : onChanged,
             ),
           ),
@@ -896,33 +775,42 @@ class _EggCheckPageState extends State<EggCheckPage> {
     );
   }
 
-  Widget _buildHistorySection() {
+  Widget _buildHistorySection(
+    AsyncValue<List<EggCaptureSummary>> asyncHistory,
+  ) {
+    final isLoading = asyncHistory.isLoading && !asyncHistory.hasValue;
+    final historyList = asyncHistory.value ?? const <EggCaptureSummary>[];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Expanded(
+            const Expanded(
               child: Text(
                 'Riwayat Tangkapan Terakhir',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: navy,
+                  color: AppColors.deepNavy,
                 ),
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.refresh,
-                  size: 18, color: Color(0xFF64748B)),
-              onPressed: fetchHistory,
-            )
+              icon: const Icon(
+                Icons.refresh,
+                size: 18,
+                color: AppColors.textSlate,
+              ),
+              onPressed: () =>
+                  ref.read(eggCaptureHistoryProvider.notifier).refresh(),
+            ),
           ],
         ),
         const SizedBox(height: 8),
 
-        if (isLoadingHistory)
+        if (isLoading)
           const Center(
             child: Padding(
               padding: EdgeInsets.all(12),
@@ -930,11 +818,17 @@ class _EggCheckPageState extends State<EggCheckPage> {
             ),
           )
         else if (historyList.isEmpty)
-          const Padding(
-            padding: EdgeInsets.all(12),
+          Padding(
+            padding: const EdgeInsets.all(12),
             child: Text(
-              'Belum ada riwayat foto candling.',
-              style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+              asyncHistory.hasError && !asyncHistory.hasValue
+                  ? 'Gagal memuat riwayat: '
+                        '${(asyncHistory.error! as ApiException).message}'
+                  : 'Belum ada riwayat foto candling.',
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textSlateLight,
+              ),
             ),
           )
         else
@@ -945,19 +839,18 @@ class _EggCheckPageState extends State<EggCheckPage> {
               itemCount: historyList.length,
               itemBuilder: (context, idx) {
                 final item = historyList[idx];
-                final rawUrl = item['url'] as String?;
-                final bytes = _parseBase64(rawUrl);
-                final label = item['prediction_label'] as String?;
+                final bytes = _decodeBase64(item.mainImageBase64);
+                final label = item.label;
 
                 return GestureDetector(
-                  onTap: () => loadJobDetail(item['id']),
+                  onTap: () => _loadJobDetail(item.id),
                   child: Container(
                     width: 90,
                     margin: const EdgeInsets.only(right: 10),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      border: Border.all(color: AppColors.slateBorder),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -971,10 +864,11 @@ class _EggCheckPageState extends State<EggCheckPage> {
                                   child: Image.memory(
                                     bytes,
                                     fit: BoxFit.cover,
+                                    cacheWidth: 300,
                                   ),
                                 )
                               : Container(
-                                  color: const Color(0xFF0F172A),
+                                  color: AppColors.candlingDarkDeep,
                                   child: const Icon(
                                     Icons.broken_image,
                                     size: 20,
@@ -989,7 +883,7 @@ class _EggCheckPageState extends State<EggCheckPage> {
                           ),
                           color: _getBadgeColor(label),
                           child: Text(
-                            '#${item['id']} ${label?.toUpperCase() ?? ''}',
+                            '#${item.id} ${label?.toUpperCase() ?? ''}',
                             textAlign: TextAlign.center,
                             maxLines: 1,
                             style: const TextStyle(
@@ -1005,8 +899,29 @@ class _EggCheckPageState extends State<EggCheckPage> {
                 );
               },
             ),
-          )
+          ),
       ],
     );
+  }
+
+  Future<void> _loadJobDetail(int jobId) async {
+    try {
+      final detail = await ref
+          .read(eggCheckRepositoryProvider)
+          .fetchJobDetail(jobId);
+      if (!mounted) return;
+      setState(() {
+        selectedResult = detail;
+        selectedImageBase64 = detail.mainImageBase64;
+        selectedStageTitle = 'Foto Asli (Candling)';
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal memuat detail job #$jobId: ${e.message}'),
+        ),
+      );
+    }
   }
 }

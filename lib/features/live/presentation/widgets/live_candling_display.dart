@@ -1,26 +1,44 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
 import 'package:hatch_care/core/constants/app_colors.dart';
-import 'package:hatch_care/features/egg_check/presentation/widgets/egg_candling_custom_painter.dart';
+import 'package:hatch_care/features/live/domain/models/incubator_models.dart';
 
 /// Komponen visual tampilan live candling telur.
 ///
-/// Menampilkan feed/foto resolusi tinggi dengan fixture lampu LED atas-bawah
-/// serta tombol "Perbesar Foto" di pojok kanan bawah.
+/// Menampilkan foto tray inkubator dari backend (URL atau base64) dengan
+/// keadaan loading, offline, error, dan tombol "Perbesar Foto".
 class LiveCandlingDisplay extends StatelessWidget {
   const LiveCandlingDisplay({
     super.key,
     required this.onZoomIn,
+    this.image = const IncubatorImage.empty(),
+    this.isLoading = false,
+    this.hasError = false,
+    this.isOnline = false,
   });
 
   final VoidCallback onZoomIn;
+
+  /// Sumber gambar tray dari backend.
+  final IncubatorImage image;
+
+  /// Saat fetch pertama masih berjalan.
+  final bool isLoading;
+
+  /// Saat fetch gagal (server/error jaringan).
+  final bool hasError;
+
+  /// Status kamera ESP32-CAM.
+  final bool isOnline;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       height: 280,
       decoration: BoxDecoration(
-        color: const Color(0xFF070B12),
+        color: AppColors.feedDark,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
           color: Colors.white.withValues(alpha: 0.15),
@@ -45,64 +63,14 @@ class LiveCandlingDisplay extends StatelessWidget {
                 gradient: RadialGradient(
                   center: Alignment.center,
                   radius: 0.9,
-                  colors: [
-                    Color(0xFF151C28),
-                    Color(0xFF070B12),
-                  ],
+                  colors: [AppColors.feedDarkSoft, AppColors.feedDark],
                 ),
               ),
             ),
           ),
 
-          // Lampu dudukan fixture atas
-          Positioned(
-            top: 24,
-            child: Container(
-              width: 90,
-              height: 18,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.85),
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(10),
-                  bottom: Radius.circular(4),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.white.withValues(alpha: 0.5),
-                    blurRadius: 10,
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Telur Candling di tengah
-          SizedBox(
-            width: 220,
-            height: 240,
-            child: const CustomPaint(
-              painter: EggCandlingPainter(isTorchOn: true),
-            ),
-          ),
-
-          // Dudukan fixture bawah
-          Positioned(
-            bottom: 24,
-            child: Container(
-              width: 76,
-              height: 14,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.85),
-                borderRadius: BorderRadius.circular(6),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.white.withValues(alpha: 0.4),
-                    blurRadius: 8,
-                  ),
-                ],
-              ),
-            ),
-          ),
+          // Gambar tray / keadaan placeholder
+          Positioned.fill(child: _buildContent()),
 
           // Tombol "Perbesar Foto" di pojok kanan bawah
           Positioned(
@@ -111,7 +79,7 @@ class LiveCandlingDisplay extends StatelessWidget {
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: onZoomIn,
+                onTap: image.isEmpty ? null : onZoomIn,
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
@@ -131,19 +99,23 @@ class LiveCandlingDisplay extends StatelessWidget {
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: const [
+                    children: [
                       Icon(
                         Icons.search,
                         size: 15,
-                        color: AppColors.primaryDark,
+                        color: image.isEmpty
+                            ? AppColors.textMuted
+                            : AppColors.primaryDark,
                       ),
-                      SizedBox(width: 4),
+                      const SizedBox(width: 4),
                       Text(
                         'Perbesar Foto',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.primaryDark,
+                          color: image.isEmpty
+                              ? AppColors.textMuted
+                              : AppColors.primaryDark,
                         ),
                       ),
                     ],
@@ -153,6 +125,109 @@ class LiveCandlingDisplay extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    if (isLoading && image.isEmpty) {
+      return Container(
+        width: double.infinity,
+        height: 280,
+        color: AppColors.feedDark,
+        child: const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: AppColors.tertiary,
+              ),
+              SizedBox(height: 10),
+              Text(
+                'Menghubungkan ke inkubator...',
+                style: TextStyle(color: Colors.white70, fontSize: 11),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (!image.isEmpty) {
+      return SizedBox(
+        width: double.infinity,
+        height: 280,
+        child: image.isNetwork
+            ? Image.network(
+                image.networkUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                    _buildPlaceholder(),
+              )
+            : Image.memory(
+                base64Decode(image.base64Data!),
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                    _buildPlaceholder(),
+              ),
+      );
+    }
+
+    return _buildPlaceholder();
+  }
+
+  Widget _buildPlaceholder() {
+    final title = hasError
+        ? 'Gagal memuat data dari server'
+        : isOnline
+        ? 'Menunggu Tangkapan Citra'
+        : 'Inkubator Offline / Kamera Terputus';
+    final subtitle = hasError
+        ? 'Periksa koneksi internet lalu coba lagi'
+        : isOnline
+        ? 'Kamera ESP32-CAM sedang memproses frame'
+        : 'ESP32 belum mengirim citra tray ke server';
+
+    return Container(
+      width: double.infinity,
+      height: 280,
+      color: AppColors.feedDark,
+      padding: const EdgeInsets.all(16),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              hasError
+                  ? Icons.cloud_off_outlined
+                  : isOnline
+                  ? Icons.camera_alt_outlined
+                  : Icons.videocam_off_outlined,
+              size: 42,
+              color: Colors.white.withValues(alpha: 0.35),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.white.withValues(alpha: 0.8),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.white.withValues(alpha: 0.5),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

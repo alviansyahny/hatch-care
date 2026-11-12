@@ -61,10 +61,7 @@ class EggCheckControls extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.transparent,
-                border: Border.all(
-                  color: AppColors.primary,
-                  width: 3.5,
-                ),
+                border: Border.all(color: AppColors.primary, width: 3.5),
               ),
               padding: const EdgeInsets.all(4),
               child: Container(
@@ -80,21 +77,14 @@ class EggCheckControls extends StatelessWidget {
                   ],
                 ),
                 child: const Center(
-                  child: Icon(
-                    Icons.camera,
-                    color: AppColors.primary,
-                    size: 28,
-                  ),
+                  child: Icon(Icons.camera, color: AppColors.primary, size: 28),
                 ),
               ),
             ),
           ),
 
           // Placeholder penyeimbang agar tombol shutter tetap presisi di tengah
-          const SizedBox(
-            width: 52,
-            height: 52,
-          ),
+          const SizedBox(width: 52, height: 52),
         ],
       ),
     );

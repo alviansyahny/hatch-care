@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:hatch_care/core/constants/app_assets.dart';
 import 'package:hatch_care/core/constants/app_colors.dart';
 import 'package:hatch_care/core/constants/app_spacing.dart';
+import 'package:hatch_care/features/auth/presentation/providers/auth_provider.dart';
 
 /// Halaman pendaftaran akun HATCH-CARE.
-class RegisterPage extends StatefulWidget {
+class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});
 
   @override
-  State<RegisterPage> createState() => _RegisterPageState();
+  ConsumerState<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _RegisterPageState extends State<RegisterPage> {
+class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
 
   final usernameController = TextEditingController();
@@ -24,6 +26,7 @@ class _RegisterPageState extends State<RegisterPage> {
   bool obscurePassword = true;
   bool obscureConfirmPassword = true;
   bool agreeTerms = false;
+  bool isSubmitting = false;
 
   @override
   void dispose() {
@@ -32,6 +35,42 @@ class _RegisterPageState extends State<RegisterPage> {
     passwordController.dispose();
     confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate() || isSubmitting) return;
+
+    if (!agreeTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Silakan setujui Syarat dan Ketentuan.')),
+      );
+      return;
+    }
+
+    setState(() => isSubmitting = true);
+    try {
+      final session = await ref
+          .read(authRepositoryProvider)
+          .register(
+            name: usernameController.text.trim(),
+            username: usernameController.text.trim(),
+            email: emailController.text.trim(),
+            password: passwordController.text,
+          );
+      await ref.read(authSessionProvider.notifier).setSession(session);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Akun berhasil dibuat. Selamat datang!')),
+      );
+      context.go('/home');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    } finally {
+      if (mounted) setState(() => isSubmitting = false);
+    }
   }
 
   Widget buildInputField({
@@ -305,32 +344,11 @@ class _RegisterPageState extends State<RegisterPage> {
 
                       const SizedBox(height: AppSpacing.md),
 
-                      // Tombol Daftar
+                      // Tombol Daftar — kirim data ke backend lalu ke /home
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: () {
-                            if (_formKey.currentState!.validate()) {
-                              if (!agreeTerms) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Silakan setujui Syarat dan Ketentuan.',
-                                    ),
-                                  ),
-                                );
-                                return;
-                              }
-
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Form pendaftaran berhasil divalidasi.',
-                                  ),
-                                ),
-                              );
-                            }
-                          },
+                          onPressed: isSubmitting ? null : _submit,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.tertiary,
                             foregroundColor: AppColors.primary,
@@ -342,13 +360,22 @@ class _RegisterPageState extends State<RegisterPage> {
                               borderRadius: BorderRadius.circular(9),
                             ),
                           ),
-                          child: const Text(
-                            'Daftar',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                          child: isSubmitting
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.4,
+                                    color: AppColors.primary,
+                                  ),
+                                )
+                              : const Text(
+                                  'Daftar',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                         ),
                       ),
 

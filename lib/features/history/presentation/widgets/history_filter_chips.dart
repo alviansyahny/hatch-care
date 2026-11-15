@@ -6,64 +6,40 @@ import 'package:hatch_care/core/constants/app_spacing.dart';
 import 'package:hatch_care/features/history/domain/models/history_models.dart';
 import 'package:hatch_care/features/history/presentation/providers/history_provider.dart';
 
-/// Baris filter chip horizontal untuk menyaring riwayat candling.
+/// Baris filter chip horizontal untuk menyaring daftar tangkapan kamera.
 ///
-/// Chip: Semua | ● Fertile | ● Infertile | ● Mortalitas.
-/// Chip aktif berwarna primary dengan teks putih; chip lain outline.
-/// Jumlah dihitung dari data melalui [historyCountsProvider].
+/// Chip: Semua | 💡 Lampu nyala | 🌙 Lampu mati.
+/// Foto gelap umumnya diambil saat lampu mati, jadi filter ini membantu
+/// memilah foto yang layak dilihat. Jumlah dihitung dari data.
 class HistoryFilterChips extends ConsumerWidget {
   const HistoryFilterChips({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currentFilter = ref.watch(historyFilterProvider);
-    final counts = ref.watch(historyCountsProvider);
+    final currentFilter = ref.watch(captureFilterProvider);
+    final counts = ref.watch(captureFilterCountsProvider);
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          _FilterChip(
-            chipKey: const Key('filter_semua'),
-            label: 'Semua',
-            count: counts[null] ?? 0,
-            isActive: currentFilter == null,
-            onTap: () =>
-                ref.read(historyFilterProvider.notifier).setFilter(null),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          _FilterChip(
-            chipKey: const Key('filter_fertil'),
-            label: EggStatus.fertil.label,
-            count: counts[EggStatus.fertil] ?? 0,
-            dotColor: AppColors.statusConnected,
-            isActive: currentFilter == EggStatus.fertil,
-            onTap: () => ref
-                .read(historyFilterProvider.notifier)
-                .setFilter(EggStatus.fertil),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          _FilterChip(
-            chipKey: const Key('filter_infertil'),
-            label: EggStatus.infertil.label,
-            count: counts[EggStatus.infertil] ?? 0,
-            dotColor: AppColors.badgeInfertileDot,
-            isActive: currentFilter == EggStatus.infertil,
-            onTap: () => ref
-                .read(historyFilterProvider.notifier)
-                .setFilter(EggStatus.infertil),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          _FilterChip(
-            chipKey: const Key('filter_mortalitas'),
-            label: EggStatus.mortalitas.label,
-            count: counts[EggStatus.mortalitas] ?? 0,
-            dotColor: AppColors.badgeMortalitasDot,
-            isActive: currentFilter == EggStatus.mortalitas,
-            onTap: () => ref
-                .read(historyFilterProvider.notifier)
-                .setFilter(EggStatus.mortalitas),
-          ),
+          for (final filter in CaptureFilter.values) ...[
+            if (filter != CaptureFilter.values.first)
+              const SizedBox(width: AppSpacing.sm),
+            _FilterChip(
+              chipKey: Key('filter_${filter.name}'),
+              label: filter.label,
+              count: counts[filter] ?? 0,
+              dotColor: filter == CaptureFilter.lampuNyala
+                  ? AppColors.statusConnected
+                  : filter == CaptureFilter.lampuMati
+                  ? AppColors.textSlateLight
+                  : null,
+              isActive: currentFilter == filter,
+              onTap: () =>
+                  ref.read(captureFilterProvider.notifier).setFilter(filter),
+            ),
+          ],
         ],
       ),
     );

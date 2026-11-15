@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:hatch_care/core/constants/app_colors.dart';
 import 'package:hatch_care/features/live/domain/models/incubator_models.dart';
 import 'package:hatch_care/features/live/presentation/providers/incubator_provider.dart';
 
@@ -91,6 +92,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             children: [
               // HEADER
               Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   const Expanded(
                     child: Column(
@@ -99,34 +101,42 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                         Text(
                           'Selamat Datang!',
                           style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF343B49),
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.2,
+                            color: Color(0xFF1F2937),
                           ),
                         ),
-                        SizedBox(height: 5),
+                        SizedBox(height: 6),
                         Text(
                           'Pantau kondisi inkubator dan perkembangan telur hari ini',
                           style: TextStyle(
-                            fontSize: 11,
-                            color: Color(0xFF60799F),
+                            fontSize: 12,
+                            height: 1.45,
+                            color: Color(0xFF64748B),
                           ),
                         ),
                       ],
                     ),
                   ),
 
+                  const SizedBox(width: 12),
+
                   // TOMBOL NOTIFIKASI
-                  CircleAvatar(
-                    radius: 22,
-                    backgroundColor: const Color(0xFFFFF1BE),
-                    child: IconButton(
-                      padding: EdgeInsets.zero,
-                      onPressed: () => context.push('/notifications'),
-                      icon: const Icon(
-                        Icons.notifications_none,
-                        color: Color(0xFF0D3158),
-                        size: 23,
+                  Material(
+                    color: const Color(0xFFFFF3C4),
+                    borderRadius: BorderRadius.circular(14),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: () => context.push('/notifications'),
+                      child: const SizedBox(
+                        width: 44,
+                        height: 44,
+                        child: Icon(
+                          Icons.notifications_none_rounded,
+                          color: Color(0xFF0D3158),
+                          size: 22,
+                        ),
                       ),
                     ),
                   ),
@@ -357,9 +367,16 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                         ),
                         IconButton(
                           onPressed: () => showFeature('Detail grafik'),
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 32,
+                            minHeight: 32,
+                          ),
                           icon: const Icon(
                             Icons.more_vert,
-                            color: Colors.blueGrey,
+                            color: AppColors.textSlate,
+                            size: 22,
                           ),
                         ),
                       ],

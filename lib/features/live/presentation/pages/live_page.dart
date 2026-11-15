@@ -35,6 +35,7 @@ class LivePage extends ConsumerWidget {
       backgroundColor: AppColors.neutral,
       appBar: AppBar(
         backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.neutral,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.neutral),
@@ -43,7 +44,7 @@ class LivePage extends ConsumerWidget {
         title: const Text(
           'Live',
           style: TextStyle(
-            color: AppColors.tertiary,
+            color: AppColors.neutral,
             fontWeight: FontWeight.bold,
             fontSize: 20,
           ),
@@ -57,15 +58,18 @@ class LivePage extends ConsumerWidget {
                     height: 16,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: AppColors.tertiary,
+                      color: AppColors.neutral,
                     ),
                   )
-                : const Icon(Icons.refresh, color: AppColors.tertiary),
+                : const Icon(Icons.refresh, color: AppColors.neutral),
             onPressed: asyncSnapshot.isRefreshing
                 ? null
                 : () => ref.read(incubatorLatestProvider.notifier).refresh(),
           ),
         ],
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+        ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(

@@ -83,6 +83,7 @@ class IncubatorRepositoryImpl implements IncubatorRepository {
       lamp: dto.lamp,
       motor: dto.motor,
       imageUrl: dto.url,
+      sizeKb: dto.sizeKb,
     );
   }
 

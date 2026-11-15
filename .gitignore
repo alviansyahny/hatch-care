@@ -44,3 +44,6 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 .env*
+# Backend lokal (repo terpisah)
+_backend_ref/
+_my_backend/

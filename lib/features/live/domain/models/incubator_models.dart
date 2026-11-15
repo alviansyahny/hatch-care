@@ -36,6 +36,7 @@ class IncubatorHistoryEntry {
     this.lamp,
     this.motor,
     this.imageUrl,
+    this.sizeKb,
   });
 
   final DateTime? capturedAt;
@@ -44,6 +45,9 @@ class IncubatorHistoryEntry {
   final bool? lamp;
   final bool? motor;
   final String? imageUrl;
+
+  /// Ukuran file foto (KB) bila server melaporkannya.
+  final int? sizeKb;
 }
 
 /// Snapshot kondisi inkubator terkini dari backend.

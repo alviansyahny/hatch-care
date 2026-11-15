@@ -21,6 +21,6 @@ abstract final class AppConfig {
   /// `flutter run --dart-define=AUTH_API_BASE_URL=https://host-lain.com`
   static const String authApiBaseUrl = String.fromEnvironment(
     'AUTH_API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:8000',
+    defaultValue: 'https://serial-verification-recruiting-snowboard.trycloudflare.com/hatch_care_backend/public',
   );
 }

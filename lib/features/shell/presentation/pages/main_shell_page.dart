@@ -146,15 +146,15 @@ class _NavBarItem extends StatelessWidget {
                 horizontal: AppSpacing.md,
                 vertical: AppSpacing.xs + 2,
               ),
-              child: Icon(tab.icon, color: AppColors.textMuted, size: 20),
+              child: Icon(tab.icon, color: AppColors.textSlate, size: 20),
             ),
           const SizedBox(height: 2),
           Text(
             tab.label,
             style: TextStyle(
               fontSize: 10,
-              fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-              color: isActive ? AppColors.primary : AppColors.textMuted,
+              fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+              color: isActive ? AppColors.primary : AppColors.textSlate,
             ),
           ),
         ],

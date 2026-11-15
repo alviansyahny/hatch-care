@@ -18,6 +18,7 @@ class SettingPage extends StatelessWidget {
       backgroundColor: AppColors.neutral,
       appBar: AppBar(
         backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.neutral,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.neutral),
@@ -26,7 +27,7 @@ class SettingPage extends StatelessWidget {
         title: const Text(
           'Setting & Profil',
           style: TextStyle(
-            color: AppColors.tertiary,
+            color: AppColors.neutral,
             fontWeight: FontWeight.bold,
             fontSize: 20,
           ),
@@ -37,6 +38,9 @@ class SettingPage extends StatelessWidget {
             onPressed: () {},
           ),
         ],
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+        ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(

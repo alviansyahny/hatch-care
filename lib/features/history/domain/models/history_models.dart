@@ -1,45 +1,134 @@
-/// Model data untuk fitur riwayat candling HATCH-CARE.
+/// Model data untuk fitur riwayat tangkapan kamera inkubator (menu History).
 ///
-/// Semua model bersifat immutable (field [final], konstruktor [const])
-/// agar mudah diganti dengan data asli dari repository di tahap backend.
+/// Sumber data: `GET /incubator/latest` (backend IoT) — field `history`
+/// berisi daftar foto 1 jam terakhir beserta telemetri saat foto diambil.
+/// Hasil deteksi YOLO (`total_eggs`, konfiden) hanya tersedia untuk foto
+/// terbaru, jadi field deteksi pada [CaptureRecord] bisa `null`.
 library;
 
-import 'package:hatch_care/core/enums/egg_status.dart';
-export 'package:hatch_care/core/enums/egg_status.dart';
+import 'package:hatch_care/features/live/domain/models/incubator_models.dart';
 
 // ---------------------------------------------------------------------------
-// Record riwayat candling
+// Filter tampilan
 // ---------------------------------------------------------------------------
 
-/// Satu baris riwayat hasil candling telur.
+/// Filter daftar tangkapan berdasarkan kondisi lampu saat foto diambil.
 ///
-/// Field [dateTime] bertipe [DateTime]; format tampilan ("18 Mei, 14:38")
-/// dihasilkan lewat [formatTanggalSingkat] di `lib/core/utils/date_formatter.dart`.
-class CandlingRecord {
-  const CandlingRecord({
-    required this.eggNumber,
-    required this.day,
-    required this.status,
-    required this.batchCode,
-    required this.dateTime,
-    required this.confidencePercent,
+/// Foto gelap umumnya terjadi saat lampu inkubator mati, jadi filter ini
+/// membantu memisahkan foto yang terang dan yang gelap.
+enum CaptureFilter {
+  /// Semua foto.
+  semua,
+
+  /// Hanya foto yang diambil saat lampu/pemanas menyala.
+  lampuNyala,
+
+  /// Hanya foto yang diambil saat lampu/pemanas mati.
+  lampuMati;
+
+  /// Label tampilan untuk chip filter.
+  String get label {
+    return switch (this) {
+      CaptureFilter.semua => 'Semua',
+      CaptureFilter.lampuNyala => 'Lampu nyala',
+      CaptureFilter.lampuMati => 'Lampu mati',
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Record tangkapan
+// ---------------------------------------------------------------------------
+
+/// Satu tangkapan foto kamera inkubator beserta kondisi tray saat itu.
+class CaptureRecord {
+  const CaptureRecord({
+    this.id,
+    this.filename,
+    required this.image,
+    this.capturedAt,
+    this.temperature,
+    this.humidity,
+    this.lamp,
+    this.motor,
+    this.sizeKb,
+    this.eggCount,
+    this.detectionConfidences = const [],
   });
 
-  /// Nomor telur (mis. 7 → ditampilkan "Egg #07").
-  final int eggNumber;
+  /// ID unik tangkapan dari backend (mis. "20261115_135019_xiu7").
+  final String? id;
 
-  /// Hari penetasan saat candling dilakukan (mis. 11 → "Hari 11").
-  final int day;
+  /// Nama file foto di server (mis. "inc_20261115_135019_xiu7.jpg").
+  final String? filename;
 
-  /// Status telur hasil candling.
-  final EggStatus status;
+  /// Sumber gambar (URL absolut atau base64).
+  final IncubatorImage image;
 
-  /// Kode batch telur (mis. "B04-EGG-07").
-  final String batchCode;
+  /// Waktu foto diambil (sudah dikonversi ke waktu lokal).
+  final DateTime? capturedAt;
 
-  /// Waktu candling dilakukan.
-  final DateTime dateTime;
+  /// Suhu tray saat foto diambil (°C).
+  final double? temperature;
 
-  /// Persentase keyakinan AI (0–100).
-  final int confidencePercent;
+  /// Kelembapan tray saat foto diambil (%RH).
+  final double? humidity;
+
+  /// Status lampu/pemanas saat foto diambil.
+  final bool? lamp;
+
+  /// Status motor rotasi saat foto diambil.
+  final bool? motor;
+
+  /// Ukuran file foto (KB) bila server melaporkannya.
+  final int? sizeKb;
+
+  /// Jumlah telur hasil deteksi YOLO. `null` = foto belum dianalisis.
+  final int? eggCount;
+
+  /// Konfiden tiap deteksi (0.0–1.0), hanya jika [eggCount] tersedia.
+  final List<double?> detectionConfidences;
+
+  /// `true` jika foto ini punya hasil deteksi YOLO.
+  bool get hasDetection => eggCount != null;
+
+  /// Rata-rata konfiden deteksi (0–100), `null` jika tidak ada deteksi.
+  int? get averageConfidencePercent {
+    final valid = detectionConfidences.whereType<double>().toList();
+    if (valid.isEmpty) return null;
+    return ((valid.reduce((a, b) => a + b) / valid.length) * 100).round();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Data halaman
+// ---------------------------------------------------------------------------
+
+/// Data gabungan halaman History: daftar tangkapan + kondisi terkini.
+class CaptureHistoryData {
+  const CaptureHistoryData({
+    required this.online,
+    required this.records,
+    this.temperature,
+    this.humidity,
+  });
+
+  /// Snapshot kosong (belum ada data dari backend).
+  const CaptureHistoryData.empty()
+    : online = false,
+      records = const [],
+      temperature = null,
+      humidity = null;
+
+  /// Kamera online menurut backend.
+  final bool online;
+
+  /// Daftar tangkapan, terbaru di depan.
+  final List<CaptureRecord> records;
+
+  /// Suhu terkini (°C) dari snapshot terbaru.
+  final double? temperature;
+
+  /// Kelembapan terkini (%RH) dari snapshot terbaru.
+  final double? humidity;
 }

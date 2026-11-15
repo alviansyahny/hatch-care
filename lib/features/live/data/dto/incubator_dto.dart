@@ -15,6 +15,7 @@ class IncubatorHistoryEntryDto {
     this.humidity,
     this.lamp,
     this.motor,
+    this.sizeKb,
   });
 
   final String? filename;
@@ -25,6 +26,9 @@ class IncubatorHistoryEntryDto {
   final double? humidity;
   final bool? lamp;
   final bool? motor;
+
+  /// Ukuran file foto (KB) bila server melaporkannya.
+  final int? sizeKb;
 
   factory IncubatorHistoryEntryDto.fromJson(Object? json) {
     if (json is! Map) return const IncubatorHistoryEntryDto();
@@ -39,6 +43,7 @@ class IncubatorHistoryEntryDto {
       humidity: _asDouble(json['humidity']),
       lamp: json['lamp'] is bool ? json['lamp'] as bool : null,
       motor: json['motor'] is bool ? json['motor'] as bool : null,
+      sizeKb: json['size_kb'] is num ? (json['size_kb'] as num).toInt() : null,
     );
   }
 

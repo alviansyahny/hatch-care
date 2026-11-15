@@ -47,7 +47,7 @@ class IncubatorConditionCard extends StatelessWidget {
                   ),
                 ),
               ),
-              Icon(Icons.more_vert, color: AppColors.textMuted, size: 20),
+              Icon(Icons.more_vert, color: AppColors.textSlate, size: 20),
             ],
           ),
 

@@ -53,7 +53,7 @@ void main() {
           await tester.pump();
 
           // Memastikan judul dan elemen utama muncul
-          expect(find.text('Egg Checking (Candling)'), findsOneWidget);
+          expect(find.text('Egg Check'), findsOneWidget);
           expect(find.text('Ambil Foto Candling'), findsOneWidget);
         });
       },

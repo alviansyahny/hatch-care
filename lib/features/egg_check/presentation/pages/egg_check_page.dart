@@ -72,23 +72,19 @@ class _EggCheckPageState extends ConsumerState<EggCheckPage> {
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
       appBar: AppBar(
-        backgroundColor: AppColors.deepNavy,
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.neutral,
         elevation: 0,
-        centerTitle: true,
         title: const Text(
-          'Egg Checking (Candling)',
+          'Egg Check',
           style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
+            color: AppColors.neutral,
+            fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
         ),
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: Colors.white,
-            size: 20,
-          ),
+          icon: const Icon(Icons.arrow_back, color: AppColors.neutral),
           onPressed: () {
             if (context.canPop()) {
               context.pop();
@@ -99,13 +95,16 @@ class _EggCheckPageState extends ConsumerState<EggCheckPage> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
+            icon: const Icon(Icons.refresh, color: AppColors.neutral),
             onPressed: () {
               ref.read(eggDeviceStatusProvider.notifier).refresh();
               ref.read(eggCaptureHistoryProvider.notifier).refresh();
             },
           ),
         ],
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),

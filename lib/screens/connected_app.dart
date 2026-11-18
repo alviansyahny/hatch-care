@@ -198,10 +198,21 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late Future<dynamic> latest;
+  Timer? refreshTimer;
   @override
   void initState() {
     super.initState();
     refresh();
+    refreshTimer = Timer.periodic(
+      const Duration(seconds: 20),
+      (_) => refresh(),
+    );
+  }
+
+  @override
+  void dispose() {
+    refreshTimer?.cancel();
+    super.dispose();
   }
 
   void refresh() => setState(() => latest = api('incubator/latest'));
@@ -248,8 +259,10 @@ class _HomePageState extends State<HomePage> {
           return const Center(child: CircularProgressIndicator());
         }
         final data = snapshot.data as Map<String, dynamic>;
-        final detection = data['detection'] as Map<String, dynamic>?;
         final control = data['control'] as Map<String, dynamic>?;
+        final photos = (data['history'] as List? ?? [])
+            .whereType<Map<String, dynamic>>()
+            .toList();
         String deviceState(dynamic value) => value == null
             ? 'Belum tersedia'
             : value == true
@@ -287,18 +300,21 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Deteksi YOLO',
+              'Foto dan deteksi inkubator',
               style: Theme.of(context).textTheme.titleMedium,
             ),
-            Text(
-              detection?['status'] == 'success'
-                  ? 'Jumlah telur: ${detection?['total_eggs']}'
-                  : 'Hasil deteksi belum tersedia',
+            const Text(
+              'Foto tersedia selama satu jam dan diperbarui otomatis.',
             ),
-            if (detection?['status'] == 'success')
-              ...((detection?['detections'] as List? ?? []).map(
-                (item) => Text(item.toString()),
-              )),
+            if (photos.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Text(
+                  'Belum ada foto inkubator. Ambil foto melalui pengaturan.',
+                ),
+              )
+            else
+              ...photos.map((photo) => IncubatorPhoto(photo: photo)),
             const Divider(height: 32),
             ListTile(
               leading: const Icon(Icons.settings),
@@ -321,6 +337,87 @@ class _HomePageState extends State<HomePage> {
       },
     ),
   );
+}
+
+class IncubatorPhoto extends StatelessWidget {
+  const IncubatorPhoto({super.key, required this.photo});
+  final Map<String, dynamic> photo;
+
+  @override
+  Widget build(BuildContext context) {
+    final detection = photo['detection'] as Map<String, dynamic>?;
+    final detections = (detection?['detections'] as List? ?? [])
+        .whereType<Map<String, dynamic>>()
+        .toList();
+    final status = detection?['status'];
+    final rawDate = photo['at'];
+    final date = rawDate is String
+        ? DateTime.tryParse(rawDate)?.toLocal()
+        : null;
+    final filename = photo['filename'];
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              date == null
+                  ? 'Waktu foto tidak tersedia'
+                  : 'Foto: ${date.toString().substring(0, 19)}',
+            ),
+            const SizedBox(height: 8),
+            if (filename is String && filename.isNotEmpty)
+              Image.network(
+                '$baseUrl/api/incubator/photo/${Uri.encodeComponent(filename)}',
+                headers: {if (token != null) 'Authorization': 'Bearer $token'},
+                width: double.infinity,
+                fit: BoxFit.contain,
+                semanticLabel: 'Foto asli inkubator',
+                loadingBuilder: (context, child, progress) => progress == null
+                    ? child
+                    : const SizedBox(
+                        height: 160,
+                        child: Center(child: Text('Memuat foto...')),
+                      ),
+                errorBuilder: (_, _, _) => const SizedBox(
+                  height: 100,
+                  child: Center(child: Text('Foto tidak dapat dimuat.')),
+                ),
+              )
+            else
+              const Text('Foto tidak tersedia.'),
+            const SizedBox(height: 8),
+            if (status == 'success') ...[
+              Text('Total: ${detection?['total_eggs']} telur'),
+              Text(
+                'Utuh: ${detections.where((d) => (d['class'] as String?)?.toLowerCase() == 'utuh').length}',
+              ),
+              Text(
+                'Retak: ${detections.where((d) => (d['class'] as String?)?.toLowerCase() == 'retak').length}',
+              ),
+              if (detections.isEmpty)
+                const Text('Tidak ada telur yang terdeteksi pada foto ini.'),
+              for (final item in detections)
+                Text(
+                  'Telur ${item['id'] ?? '-'}: ${item['class'] ?? 'Tidak diketahui'}${item['confidence'] is num ? ' (${((item['confidence'] as num) * 100).toStringAsFixed(1)}%)' : ''}',
+                ),
+            ] else if (status == 'pending')
+              const Text('Deteksi YOLO sedang diproses.')
+            else if (status == 'failed')
+              const Text('Deteksi YOLO gagal. Foto asli tetap tersedia.')
+            else
+              const Text('Hasil deteksi untuk foto ini belum tersedia.'),
+            if (detection?['motor_pause'] == 'publish_failed')
+              const Text(
+                'Perintah jeda motor gagal dikirim. Periksa perangkat.',
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class SettingsPage extends StatefulWidget {

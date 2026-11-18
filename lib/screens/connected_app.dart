@@ -369,22 +369,10 @@ class IncubatorPhoto extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             if (filename is String && filename.isNotEmpty)
-              Image.network(
-                '$baseUrl/api/incubator/photo/${Uri.encodeComponent(filename)}',
-                headers: {if (token != null) 'Authorization': 'Bearer $token'},
-                width: double.infinity,
-                fit: BoxFit.contain,
-                semanticLabel: 'Foto asli inkubator',
-                loadingBuilder: (context, child, progress) => progress == null
-                    ? child
-                    : const SizedBox(
-                        height: 160,
-                        child: Center(child: Text('Memuat foto...')),
-                      ),
-                errorBuilder: (_, _, _) => const SizedBox(
-                  height: 100,
-                  child: Center(child: Text('Foto tidak dapat dimuat.')),
-                ),
+              DetectionComparison(
+                url:
+                    '$baseUrl/api/incubator/photo/${Uri.encodeComponent(filename)}',
+                detections: status == 'success' ? detections : null,
               )
             else
               const Text('Foto tidak tersedia.'),
@@ -418,6 +406,190 @@ class IncubatorPhoto extends StatelessWidget {
       ),
     );
   }
+}
+
+class DetectionComparison extends StatefulWidget {
+  const DetectionComparison({
+    super.key,
+    required this.url,
+    required this.detections,
+  });
+  final String url;
+  final List<Map<String, dynamic>>? detections;
+
+  @override
+  State<DetectionComparison> createState() => _DetectionComparisonState();
+}
+
+class _DetectionComparisonState extends State<DetectionComparison> {
+  bool after = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = NetworkImage(
+      widget.url,
+      headers: {if (token != null) 'Authorization': 'Bearer $token'},
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (widget.detections != null)
+          SegmentedButton<bool>(
+            segments: const [
+              ButtonSegment(value: false, label: Text('Sebelum')),
+              ButtonSegment(value: true, label: Text('Sesudah')),
+            ],
+            selected: {after},
+            onSelectionChanged: (selection) =>
+                setState(() => after = selection.first),
+          ),
+        const SizedBox(height: 8),
+        Image(
+          image: provider,
+          width: double.infinity,
+          fit: BoxFit.contain,
+          semanticLabel: after
+              ? 'Foto hasil deteksi YOLO'
+              : 'Foto asli inkubator',
+          frameBuilder: (context, child, frame, synchronous) {
+            if (frame == null) {
+              return const SizedBox(
+                height: 160,
+                child: Center(child: Text('Memuat foto...')),
+              );
+            }
+            if (!after || widget.detections == null) return child;
+            return _DetectedImage(
+              image: provider,
+              detections: widget.detections!,
+            );
+          },
+          errorBuilder: (_, _, _) => const SizedBox(
+            height: 100,
+            child: Center(child: Text('Foto tidak dapat dimuat.')),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DetectedImage extends StatefulWidget {
+  const _DetectedImage({required this.image, required this.detections});
+  final ImageProvider image;
+  final List<Map<String, dynamic>> detections;
+  @override
+  State<_DetectedImage> createState() => _DetectedImageState();
+}
+
+class _DetectedImageState extends State<_DetectedImage> {
+  Size? imageSize;
+  ImageStream? stream;
+  late final ImageStreamListener listener = ImageStreamListener((info, _) {
+    if (mounted) {
+      setState(
+        () => imageSize = Size(
+          info.image.width.toDouble(),
+          info.image.height.toDouble(),
+        ),
+      );
+    }
+  });
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    stream?.removeListener(listener);
+    stream = widget.image.resolve(createLocalImageConfiguration(context))
+      ..addListener(listener);
+  }
+
+  @override
+  void dispose() {
+    stream?.removeListener(listener);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = imageSize;
+    if (size == null) {
+      return const SizedBox(
+        height: 160,
+        child: Center(child: Text('Memuat hasil...')),
+      );
+    }
+    return AspectRatio(
+      aspectRatio: size.width / size.height,
+      child: CustomPaint(
+        foregroundPainter: _DetectionPainter(size, widget.detections),
+        child: Image(
+          image: widget.image,
+          fit: BoxFit.fill,
+          semanticLabel: 'Foto dengan kotak deteksi telur',
+        ),
+      ),
+    );
+  }
+}
+
+class _DetectionPainter extends CustomPainter {
+  _DetectionPainter(this.originalSize, this.detections);
+  final Size originalSize;
+  final List<Map<String, dynamic>> detections;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (final item in detections) {
+      final box = item['box'];
+      if (box is! List || box.length != 4 || box.any((v) => v is! num)) {
+        continue;
+      }
+      final x = (box[0] as num).toDouble() * size.width / originalSize.width;
+      final y = (box[1] as num).toDouble() * size.height / originalSize.height;
+      final w = (box[2] as num).toDouble() * size.width / originalSize.width;
+      final h = (box[3] as num).toDouble() * size.height / originalSize.height;
+      final color = item['class'] == 'retak'
+          ? const Color(0xffb91c1c)
+          : const Color(0xff147d41);
+      canvas.drawRect(
+        Rect.fromLTWH(x, y, w, h),
+        Paint()
+          ..color = color
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2,
+      );
+      final text = TextPainter(
+        text: TextSpan(
+          text: '${item['class'] ?? '?'} #${item['id'] ?? ''}',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout(maxWidth: size.width);
+      final top = (y - text.height - 4).clamp(
+        0.0,
+        size.height - text.height - 4,
+      );
+      final left = x.clamp(
+        0.0,
+        (size.width - text.width - 6).clamp(0.0, size.width),
+      );
+      canvas.drawRect(
+        Rect.fromLTWH(left, top, text.width + 6, text.height + 4),
+        Paint()..color = color,
+      );
+      text.paint(canvas, Offset(left + 3, top + 2));
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DetectionPainter oldDelegate) =>
+      originalSize != oldDelegate.originalSize ||
+      detections != oldDelegate.detections;
 }
 
 class SettingsPage extends StatefulWidget {

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'live_screen.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -254,7 +253,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         borderRadius: BorderRadius.circular(13),
         boxShadow: [
           BoxShadow(
-            color: navy.withOpacity(0.035),
+            color: navy.withValues(alpha: 0.035),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -294,7 +293,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: navy.withOpacity(0.85),
+                      color: navy.withValues(alpha: 0.85),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(

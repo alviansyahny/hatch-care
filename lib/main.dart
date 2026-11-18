@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:hatch_care/screens/splash_screen.dart';
+import 'package:hatch_care/screens/connected_app.dart';
 
 void main() {
   runApp(const HatchCareApp());
@@ -12,7 +12,7 @@ class HatchCareApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: SplashScreen(),
+      home: ConnectedApp(),
     );
   }
 }

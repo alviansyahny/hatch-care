@@ -332,7 +332,7 @@ class _EggCheckScreenState extends State<EggCheckScreen> {
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -387,7 +387,7 @@ class _EggCheckScreenState extends State<EggCheckScreen> {
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -449,14 +449,14 @@ class _EggCheckScreenState extends State<EggCheckScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.egg_outlined, size: 48, color: Colors.white.withOpacity(0.3)),
+                        Icon(Icons.egg_outlined, size: 48, color: Colors.white.withValues(alpha: 0.3)),
                         const SizedBox(height: 8),
                         Text(
                           'Belum ada tangkapan citra.\nTekan tombol Ambil Foto di bawah.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.white.withOpacity(0.6),
+                            color: Colors.white.withValues(alpha: 0.6),
                           ),
                         ),
                       ],

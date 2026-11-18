@@ -75,7 +75,7 @@ class SkScreen extends StatelessWidget {
               child: ListView.separated(
                 padding: const EdgeInsets.all(16),
                 itemCount: _items.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 14),
+                separatorBuilder: (_, _) => const SizedBox(height: 14),
                 itemBuilder: (context, index) =>
                     _SkCard(number: index + 1, item: _items[index]),
               ),
@@ -134,7 +134,7 @@ class _SkCard extends StatelessWidget {
         border: Border.all(color: Colors.grey.shade300),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -178,7 +178,7 @@ class _SkCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Icon(item.icon, size: 18, color: navy.withOpacity(0.7)),
+                    Icon(item.icon, size: 18, color: navy.withValues(alpha: 0.7)),
                   ],
                 ),
                 const SizedBox(height: 6),

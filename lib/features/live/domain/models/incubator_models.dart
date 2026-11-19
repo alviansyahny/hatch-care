@@ -113,12 +113,12 @@ class EggDetection {
   int? get confidencePercent =>
       confidence == null ? null : (confidence! * 100).round();
 
-  /// Label ringkas untuk badge di atas bounding box, mis. `#1 retak 54%`.
+  /// Label ringkas untuk badge di atas bounding box, mis. `#1 retak 54.2%`.
   String get displayLabel {
     final parts = <String>[
       if (id != null) '#$id',
       label,
-      if (confidencePercent != null) '$confidencePercent%',
+      if (confidence != null) '${(confidence! * 100).toStringAsFixed(1)}%',
     ];
     return parts.join(' ');
   }

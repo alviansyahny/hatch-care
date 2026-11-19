@@ -30,6 +30,7 @@ class IncubatorImage {
 /// Satu entri riwayat foto inkubator (1 jam terakhir).
 class IncubatorHistoryEntry {
   const IncubatorHistoryEntry({
+    this.id,
     this.capturedAt,
     this.temperature,
     this.humidity,
@@ -37,8 +38,13 @@ class IncubatorHistoryEntry {
     this.motor,
     this.imageUrl,
     this.sizeKb,
+    this.detectionStatus,
+    this.totalEggs,
+    this.detections = const [],
   });
 
+  /// ID foto dari server, mis. `20261118_225721_l2wt`.
+  final String? id;
   final DateTime? capturedAt;
   final double? temperature;
   final double? humidity;
@@ -48,6 +54,74 @@ class IncubatorHistoryEntry {
 
   /// Ukuran file foto (KB) bila server melaporkannya.
   final int? sizeKb;
+
+  /// Status inferensi YOLO foto ini: `success`, `pending`, `failed`.
+  final String? detectionStatus;
+
+  /// Jumlah telur hasil deteksi YOLO foto ini.
+  final int? totalEggs;
+
+  /// Deteksi per telur (bounding box + keyakinan) foto ini.
+  final List<EggDetection> detections;
+
+  /// `true` bila server sudah selesai menganalisis foto ini.
+  bool get detectionSucceeded => detectionStatus == 'success';
+
+  /// Jumlah telur retak pada foto ini.
+  int get crackedEggCount =>
+      detections.where((detection) => detection.isCracked).length;
+
+  /// Jumlah telur utuh pada foto ini.
+  int get intactEggCount =>
+      detections.where((detection) => !detection.isCracked).length;
+}
+
+/// Satu telur yang terdeteksi YOLO pada foto tray.
+class EggDetection {
+  const EggDetection({
+    this.id,
+    this.label = 'telur',
+    this.confidence,
+    this.x = 0,
+    this.y = 0,
+    this.width = 0,
+    this.height = 0,
+  });
+
+  /// Nomor urut deteksi dari server (1..N).
+  final int? id;
+
+  /// Kelas hasil model, mis. `utuh` atau `retak`.
+  final String label;
+
+  /// Tingkat keyakinan model (0.0–1.0); null jika server tidak mengirim.
+  final double? confidence;
+
+  /// Koordinat bounding box dalam piksel citra asli.
+  final double x;
+  final double y;
+  final double width;
+  final double height;
+
+  /// `true` jika model mengklasifikasikan telur sebagai retak.
+  bool get isCracked => label.toLowerCase() == 'retak';
+
+  /// `true` jika koordinat box valid untuk digambar.
+  bool get hasBox => width > 0 && height > 0;
+
+  /// Keyakinan model dalam persen (0–100); null bila tidak dikirim server.
+  int? get confidencePercent =>
+      confidence == null ? null : (confidence! * 100).round();
+
+  /// Label ringkas untuk badge di atas bounding box, mis. `#1 retak 54%`.
+  String get displayLabel {
+    final parts = <String>[
+      if (id != null) '#$id',
+      label,
+      if (confidencePercent != null) '$confidencePercent%',
+    ];
+    return parts.join(' ');
+  }
 }
 
 /// Snapshot kondisi inkubator terkini dari backend.
@@ -57,7 +131,8 @@ class IncubatorSnapshot {
     this.statusLabel,
     required this.image,
     required this.totalEggs,
-    required this.detectionConfidences,
+    required this.detections,
+    this.detectionStatus,
     this.temperature,
     this.humidity,
     this.lamp,
@@ -73,7 +148,8 @@ class IncubatorSnapshot {
       statusLabel = null,
       image = const IncubatorImage.empty(),
       totalEggs = 0,
-      detectionConfidences = const [],
+      detections = const [],
+      detectionStatus = null,
       temperature = null,
       humidity = null,
       lamp = null,
@@ -91,11 +167,36 @@ class IncubatorSnapshot {
   /// Foto tray terkini (null / kosong saat belum ada).
   final IncubatorImage image;
 
-  /// Jumlah telur hasil deteksi YOLOv8.
+  /// Jumlah telur hasil deteksi YOLO.
   final int totalEggs;
 
-  /// Konfiden tiap deteksi (0.0–1.0).
-  final List<double?> detectionConfidences;
+  /// Daftar telur terdeteksi beserta bounding box-nya.
+  final List<EggDetection> detections;
+
+  /// Status inferensi YOLO untuk foto terbaru: `success`, `pending`, `failed`.
+  final String? detectionStatus;
+
+  /// Konfiden tiap deteksi (0.0–1.0) untuk kompatibilitas halaman History.
+  List<double?> get detectionConfidences =>
+      detections.map((detection) => detection.confidence).toList();
+
+  /// Jumlah telur retak pada deteksi terbaru.
+  int get crackedEggCount =>
+      detections.where((detection) => detection.isCracked).length;
+
+  /// Jumlah telur utuh pada deteksi terbaru.
+  int get intactEggCount =>
+      detections.where((detection) => !detection.isCracked).length;
+
+  /// Rata-rata keyakinan YOLO (0–100); null bila belum ada deteksi.
+  int? get averageConfidencePercent {
+    final valid = detections
+        .map((detection) => detection.confidence)
+        .whereType<double>()
+        .toList(growable: false);
+    if (valid.isEmpty) return null;
+    return ((valid.reduce((a, b) => a + b) / valid.length) * 100).round();
+  }
 
   /// Suhu terkini dalam °C.
   final double? temperature;

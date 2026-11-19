@@ -15,8 +15,8 @@ import 'package:hatch_care/features/live/presentation/providers/incubator_provid
 /// State halaman History: daftar tangkapan kamera + kondisi terkini.
 ///
 /// Satu panggilan `GET /incubator/latest` sudah memuat semuanya (history
-/// 1 jam terakhir, deteksi YOLO foto terbaru, telemetri). Tidak ada polling —
-/// data disegarkan saat layar dibuka dan lewat tombol refresh.
+/// 1 jam terakhir beserta deteksi YOLO tiap foto, telemetri). Tidak ada
+/// polling — data disegarkan saat tab dibuka dan lewat tombol refresh.
 class IncubatorHistoryNotifier extends AsyncNotifier<CaptureHistoryData> {
   bool _inFlight = false;
 
@@ -54,11 +54,14 @@ class IncubatorHistoryNotifier extends AsyncNotifier<CaptureHistoryData> {
 
   /// Memetakan snapshot Live menjadi data halaman History.
   ///
-  /// URL foto di tiap entri history dinormalisasi menjadi URL absolut agar
-  /// bisa dibandingkan dengan URL snapshot (untuk menempelkan hasil deteksi
-  /// YOLO ke entri yang tepat — hanya foto terbaru yang dianalisis server).
+  /// Setiap entri history memakai hasil deteksi YOLO miliknya sendiri
+  /// (`detection` per foto), jadi analisis tidak hilang saat foto baru masuk.
+  /// Untuk data backend lama yang belum punya `detection` per entri, hasil
+  /// snapshot terbaru dipakai sebagai fallback pada foto terbaru.
   CaptureHistoryData _toHistoryData(IncubatorSnapshot snapshot) {
     final latestUrl = snapshot.image.networkUrl;
+    final snapshotHasDetection =
+        snapshot.detectionStatus != null || snapshot.detections.isNotEmpty;
     final records = <CaptureRecord>[];
     for (final entry in snapshot.history) {
       final image = _resolveImage(entry.imageUrl);
@@ -66,9 +69,20 @@ class IncubatorHistoryNotifier extends AsyncNotifier<CaptureHistoryData> {
           latestUrl != null &&
           image.networkUrl != null &&
           image.networkUrl == latestUrl;
+      final useSnapshotFallback =
+          isLatest && entry.detectionStatus == null && snapshotHasDetection;
+      final detectionStatus = useSnapshotFallback
+          ? (snapshot.detectionStatus ?? 'success')
+          : entry.detectionStatus;
+      final detections = useSnapshotFallback
+          ? snapshot.detections
+          : entry.detections;
+      final detectedCount = useSnapshotFallback
+          ? snapshot.totalEggs
+          : (entry.totalEggs ?? detections.length);
       records.add(
         CaptureRecord(
-          id: entry.imageUrl,
+          id: entry.id ?? entry.imageUrl,
           filename: _filenameFrom(entry.imageUrl),
           image: image,
           capturedAt: entry.capturedAt,
@@ -77,10 +91,9 @@ class IncubatorHistoryNotifier extends AsyncNotifier<CaptureHistoryData> {
           lamp: entry.lamp,
           motor: entry.motor,
           sizeKb: entry.sizeKb,
-          eggCount: isLatest ? snapshot.totalEggs : null,
-          detectionConfidences: isLatest
-              ? snapshot.detectionConfidences
-              : const [],
+          eggCount: detectionStatus == 'success' ? detectedCount : null,
+          detectionStatus: detectionStatus,
+          detections: detections,
         ),
       );
     }
@@ -162,13 +175,8 @@ final captureFilterProvider =
 // ---------------------------------------------------------------------------
 
 /// Jumlah tangkapan per filter (untuk label chip).
-final captureFilterCountsProvider = Provider<Map<CaptureFilter, int>>((
-  ref,
-) {
-  final records = ref
-      .watch(incubatorHistoryProvider)
-      .value
-      ?.records;
+final captureFilterCountsProvider = Provider<Map<CaptureFilter, int>>((ref) {
+  final records = ref.watch(incubatorHistoryProvider).value?.records;
   final list = records ?? const <CaptureRecord>[];
   return {
     CaptureFilter.semua: list.length,

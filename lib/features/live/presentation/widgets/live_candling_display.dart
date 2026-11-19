@@ -1,9 +1,8 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 
 import 'package:hatch_care/core/constants/app_colors.dart';
 import 'package:hatch_care/features/live/domain/models/incubator_models.dart';
+import 'package:hatch_care/features/live/presentation/widgets/live_detection_image.dart';
 
 /// Komponen visual tampilan live candling telur.
 ///
@@ -14,6 +13,7 @@ class LiveCandlingDisplay extends StatelessWidget {
     super.key,
     required this.onZoomIn,
     this.image = const IncubatorImage.empty(),
+    this.detections = const [],
     this.isLoading = false,
     this.hasError = false,
     this.isOnline = false,
@@ -23,6 +23,9 @@ class LiveCandlingDisplay extends StatelessWidget {
 
   /// Sumber gambar tray dari backend.
   final IncubatorImage image;
+
+  /// Hasil deteksi YOLO yang digambar sebagai bounding box.
+  final List<EggDetection> detections;
 
   /// Saat fetch pertama masih berjalan.
   final bool isLoading;
@@ -158,19 +161,18 @@ class LiveCandlingDisplay extends StatelessWidget {
       return SizedBox(
         width: double.infinity,
         height: 280,
-        child: image.isNetwork
-            ? Image.network(
-                image.networkUrl!,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) =>
-                    _buildPlaceholder(),
-              )
-            : Image.memory(
-                base64Decode(image.base64Data!),
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) =>
-                    _buildPlaceholder(),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            LiveDetectionImage(image: image, detections: detections),
+            if (detections.isNotEmpty)
+              Positioned(
+                top: 12,
+                left: 12,
+                child: _DetectionBadge(detections: detections),
               ),
+          ],
+        ),
       );
     }
 
@@ -228,6 +230,53 @@ class LiveCandlingDisplay extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _DetectionBadge extends StatelessWidget {
+  const _DetectionBadge({required this.detections});
+
+  final List<EggDetection> detections;
+
+  @override
+  Widget build(BuildContext context) {
+    final cracked = detections.where((d) => d.isCracked).length;
+    final label = cracked > 0
+        ? 'YOLO • ${detections.length} telur • $cracked retak'
+        : 'YOLO • ${detections.length} telur';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.65),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: cracked > 0
+                  ? AppColors.statusOffline
+                  : AppColors.statusConnected,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ],
       ),
     );
   }

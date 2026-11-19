@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,6 +9,7 @@ import 'package:hatch_care/core/utils/date_formatter.dart';
 import 'package:hatch_care/features/live/domain/models/incubator_models.dart';
 import 'package:hatch_care/features/live/presentation/providers/incubator_provider.dart';
 import 'package:hatch_care/features/live/presentation/widgets/live_candling_display.dart';
+import 'package:hatch_care/features/live/presentation/widgets/live_detection_image.dart';
 
 /// Halaman Live Monitoring inkubator — data nyata dari backend IoT
 /// (polling 20 detik, otomatis berhenti saat background/layar ditutup).
@@ -23,6 +22,7 @@ class LivePage extends ConsumerWidget {
     final snapshot = asyncSnapshot.value ?? const IncubatorSnapshot.empty();
     final isFirstLoading = asyncSnapshot.isLoading && !asyncSnapshot.hasValue;
     final hasError = asyncSnapshot.hasError && !asyncSnapshot.hasValue;
+    final isRecapturing = ref.watch(incubatorRecaptureProvider);
     final errorMessage = asyncSnapshot.error is ApiException
         ? (asyncSnapshot.error! as ApiException).message
         : 'Tidak dapat terhubung ke server inkubator.';
@@ -94,8 +94,13 @@ class LivePage extends ConsumerWidget {
 
               // Tampilan Feed Kamera Live
               LiveCandlingDisplay(
-                onZoomIn: () => _showFullscreenZoom(context, snapshot.image),
+                onZoomIn: () => _showFullscreenZoom(
+                  context,
+                  snapshot.image,
+                  snapshot.detections,
+                ),
                 image: snapshot.image,
+                detections: snapshot.detections,
                 isLoading: isFirstLoading,
                 hasError: hasError,
                 isOnline: snapshot.online,
@@ -170,17 +175,28 @@ class LivePage extends ConsumerWidget {
               SizedBox(
                 height: 50,
                 child: ElevatedButton.icon(
-                  onPressed: () {
-                    context.go('/home/egg-check');
-                  },
-                  icon: const Icon(
-                    Icons.camera_alt_outlined,
-                    color: AppColors.tertiary,
-                    size: 20,
-                  ),
-                  label: const Text(
-                    'Periksa Ulang Telur',
-                    style: TextStyle(
+                  onPressed: isRecapturing
+                      ? null
+                      : () => _handleRecapture(context, ref),
+                  icon: isRecapturing
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.neutral,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.camera_alt_outlined,
+                          color: AppColors.tertiary,
+                          size: 20,
+                        ),
+                  label: Text(
+                    isRecapturing
+                        ? 'Memeriksa Ulang Telur...'
+                        : 'Periksa Ulang Telur',
+                    style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -188,6 +204,10 @@ class LivePage extends ConsumerWidget {
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
+                    disabledBackgroundColor: AppColors.primary.withValues(
+                      alpha: 0.7,
+                    ),
+                    disabledForegroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -216,7 +236,32 @@ class LivePage extends ConsumerWidget {
       'Kamera overhead ESP32-CAM mengambil foto tray inkubator secara '
       'berkala dan memperbarui data otomatis tiap 20 detik.',
     );
-    buffer.write(' Terakhir terdeteksi ${snapshot.totalEggs} butir telur.');
+    if (snapshot.detectionStatus == 'success') {
+      buffer.write(' YOLO mendeteksi ${snapshot.totalEggs} butir telur');
+      final details = <String>[
+        if (snapshot.intactEggCount > 0) '${snapshot.intactEggCount} utuh',
+        if (snapshot.crackedEggCount > 0) '${snapshot.crackedEggCount} retak',
+        if (snapshot.averageConfidencePercent != null)
+          'keyakinan rerata ${snapshot.averageConfidencePercent}%',
+      ];
+      if (details.isNotEmpty) {
+        buffer.write(' (${details.join(', ')})');
+      }
+      buffer.write(
+        snapshot.detections.isEmpty
+            ? '.'
+            : '. Kotak deteksi dan skor keyakinan tiap telur ditampilkan '
+                  'langsung pada foto.',
+      );
+    } else if (snapshot.detectionStatus == 'pending') {
+      buffer.write(' Deteksi YOLO sedang diproses untuk foto terbaru.');
+    } else if (snapshot.detectionStatus == 'failed') {
+      buffer.write(
+        ' Deteksi YOLO gagal pada foto terbaru; foto asli tetap ditampilkan.',
+      );
+    } else {
+      buffer.write(' Terakhir terdeteksi ${snapshot.totalEggs} butir telur.');
+    }
     if (!snapshot.online) {
       buffer.write(
         ' Inkubator sedang offline — data yang tampil kemungkinan '
@@ -226,7 +271,58 @@ class LivePage extends ConsumerWidget {
     return buffer.toString();
   }
 
-  void _showFullscreenZoom(BuildContext context, IncubatorImage image) {
+  String _detectionCaption(List<EggDetection> detections) {
+    if (detections.isEmpty) {
+      return 'YOLO: tidak ada telur terdeteksi';
+    }
+    final intact = detections.where((d) => !d.isCracked).length;
+    final cracked = detections.where((d) => d.isCracked).length;
+    final confidences = detections
+        .map((d) => d.confidence)
+        .whereType<double>()
+        .toList(growable: false);
+    final average = confidences.isEmpty
+        ? null
+        : ((confidences.reduce((a, b) => a + b) / confidences.length) * 100)
+              .round();
+    final parts = <String>[
+      'YOLO: ${detections.length} telur',
+      '$intact utuh',
+      if (cracked > 0) '$cracked retak',
+      if (average != null) 'keyakinan rata-rata $average%',
+    ];
+    return parts.join(' • ');
+  }
+
+  Future<void> _handleRecapture(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final received = await ref
+          .read(incubatorLatestProvider.notifier)
+          .recapture();
+      if (!context.mounted) return;
+      final snapshot = ref.read(incubatorLatestProvider).value;
+      final message = switch (snapshot?.detectionStatus) {
+        _ when !received =>
+          'Perintah sudah dikirim, tetapi foto baru belum masuk. Coba lagi.',
+        'success' =>
+          'Foto baru diterima: ${snapshot!.totalEggs} telur terdeteksi ulang.',
+        'pending' => 'Foto baru diterima. Analisis YOLO masih berjalan.',
+        'failed' => 'Foto baru diterima, tetapi deteksi YOLO gagal. Coba lagi.',
+        _ => 'Foto baru diterima.',
+      };
+      messenger.showSnackBar(SnackBar(content: Text(message)));
+    } on ApiException catch (error) {
+      if (!context.mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text(error.message)));
+    }
+  }
+
+  void _showFullscreenZoom(
+    BuildContext context,
+    IncubatorImage image,
+    List<EggDetection> detections,
+  ) {
     if (image.isEmpty) return;
     showDialog<void>(
       context: context,
@@ -234,19 +330,32 @@ class LivePage extends ConsumerWidget {
         backgroundColor: Colors.black,
         child: Stack(
           children: [
-            Center(
+            Positioned.fill(
               child: InteractiveViewer(
                 minScale: 0.5,
                 maxScale: 4.0,
-                child: image.isNetwork
-                    ? Image.network(image.networkUrl!)
-                    : Image.memory(
-                        base64Decode(image.base64Data!),
-                        errorBuilder: (context, error, stackTrace) =>
-                            const SizedBox.shrink(),
-                      ),
+                child: LiveDetectionImage(
+                  image: image,
+                  detections: detections,
+                  semanticLabel: 'Foto tray inkubator dengan bounding box YOLO',
+                ),
               ),
             ),
+            if (detections.isNotEmpty)
+              Positioned(
+                left: 20,
+                right: 20,
+                bottom: 36,
+                child: Text(
+                  _detectionCaption(detections),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
             Positioned(
               top: 40,
               right: 20,

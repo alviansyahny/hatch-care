@@ -5,21 +5,41 @@ import 'package:hatch_care/core/constants/app_spacing.dart';
 import 'package:hatch_care/core/utils/date_formatter.dart';
 import 'package:hatch_care/features/history/domain/models/history_models.dart';
 import 'package:hatch_care/features/history/presentation/widgets/capture_image.dart';
+import 'package:hatch_care/features/live/presentation/widgets/live_detection_image.dart';
 
 /// Kartu tangkapan untuk grid halaman History.
 ///
 /// Menampilkan thumbnail foto, waktu pengambilan (overlay), status lampu dan
-/// motor (badge atas), serta jumlah telur hasil deteksi YOLO bila tersedia
-/// (hanya foto terbaru yang dianalisis server).
+/// motor (badge atas), serta hasil deteksi YOLO milik foto tersebut (bounding
+/// box, jumlah telur, utuh/retak) bila tersedia.
 class CaptureGridTile extends StatelessWidget {
-  const CaptureGridTile({
-    super.key,
-    required this.record,
-    required this.onTap,
-  });
+  const CaptureGridTile({super.key, required this.record, required this.onTap});
 
   final CaptureRecord record;
   final VoidCallback onTap;
+
+  IconData get _statusIcon {
+    if (record.hasDetection) return Icons.egg_outlined;
+    if (record.detectionPending) return Icons.hourglass_top;
+    if (record.detectionFailed) return Icons.error_outline;
+    return Icons.egg_outlined;
+  }
+
+  Color get _statusColor {
+    if (record.hasDetection) return AppColors.primary;
+    if (record.detectionPending) return AppColors.blueAccent;
+    if (record.detectionFailed) return AppColors.statusOfflineText;
+    return AppColors.textMuted;
+  }
+
+  String get _statusLabel {
+    if (record.hasDetection) {
+      return '${record.eggCount ?? record.detections.length} telur';
+    }
+    if (record.detectionPending) return 'Sedang dianalisis';
+    if (record.detectionFailed) return 'Deteksi gagal';
+    return 'Belum dianalisis';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +63,16 @@ class CaptureGridTile extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  CaptureImage(image: record.image),
+                  if (record.detections.any((detection) => detection.hasBox))
+                    LiveDetectionImage(
+                      image: record.image,
+                      detections: record.detections,
+                      fit: BoxFit.cover,
+                      semanticLabel:
+                          'Foto tray inkubator dengan bounding box YOLO',
+                    )
+                  else
+                    CaptureImage(image: record.image),
                   if (record.lamp != null || record.motor == true)
                     Positioned(
                       top: AppSpacing.sm,
@@ -108,46 +137,53 @@ class CaptureGridTile extends StatelessWidget {
                 AppSpacing.sm,
                 AppSpacing.sm,
               ),
-              child: Row(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Row(
+                    children: [
+                      Icon(_statusIcon, size: 14, color: _statusColor),
+                      const SizedBox(width: AppSpacing.xs),
+                      Expanded(
+                        child: Text(
+                          _statusLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: record.hasDetection ? 11 : 10,
+                            fontWeight: record.hasDetection
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            color: _statusColor,
+                          ),
+                        ),
+                      ),
+                      if (record.sizeKb != null) ...[
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(
+                          '${record.sizeKb} KB',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                   if (record.hasDetection) ...[
-                    const Icon(
-                      Icons.egg_outlined,
-                      size: 14,
-                      color: AppColors.primary,
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
-                    Expanded(
-                      child: Text(
-                        '${record.eggCount} telur',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ),
-                  ] else
-                    const Expanded(
-                      child: Text(
-                        'Belum dianalisis',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: AppColors.textMuted,
-                        ),
-                      ),
-                    ),
-                  if (record.sizeKb != null) ...[
-                    const SizedBox(width: AppSpacing.xs),
+                    const SizedBox(height: 2),
                     Text(
-                      '${record.sizeKb} KB',
-                      style: const TextStyle(
+                      '${record.intactEggCount} utuh · '
+                      '${record.crackedEggCount} retak',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
                         fontSize: 10,
-                        color: AppColors.textMuted,
+                        fontWeight: FontWeight.w600,
+                        color: record.crackedEggCount > 0
+                            ? AppColors.statusOfflineText
+                            : AppColors.statusOnlineText,
                       ),
                     ),
                   ],

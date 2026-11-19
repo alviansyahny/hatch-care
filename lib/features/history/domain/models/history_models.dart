@@ -2,8 +2,8 @@
 ///
 /// Sumber data: `GET /incubator/latest` (backend IoT) — field `history`
 /// berisi daftar foto 1 jam terakhir beserta telemetri saat foto diambil.
-/// Hasil deteksi YOLO (`total_eggs`, konfiden) hanya tersedia untuk foto
-/// terbaru, jadi field deteksi pada [CaptureRecord] bisa `null`.
+/// Setiap entri membawa hasil deteksi YOLO miliknya sendiri (`detection`),
+/// jadi analisis bounding box + keyakinan tetap tersimpan per foto.
 library;
 
 import 'package:hatch_care/features/live/domain/models/incubator_models.dart';
@@ -53,7 +53,8 @@ class CaptureRecord {
     this.motor,
     this.sizeKb,
     this.eggCount,
-    this.detectionConfidences = const [],
+    this.detectionStatus,
+    this.detections = const [],
   });
 
   /// ID unik tangkapan dari backend (mis. "20261115_135019_xiu7").
@@ -86,11 +87,32 @@ class CaptureRecord {
   /// Jumlah telur hasil deteksi YOLO. `null` = foto belum dianalisis.
   final int? eggCount;
 
-  /// Konfiden tiap deteksi (0.0–1.0), hanya jika [eggCount] tersedia.
-  final List<double?> detectionConfidences;
+  /// Status inferensi YOLO foto ini: `success`, `pending`, `failed`.
+  final String? detectionStatus;
 
-  /// `true` jika foto ini punya hasil deteksi YOLO.
-  bool get hasDetection => eggCount != null;
+  /// Deteksi per telur (bounding box + keyakinan) foto ini.
+  final List<EggDetection> detections;
+
+  /// Konfiden tiap deteksi (0.0–1.0), hanya jika tersedia.
+  List<double?> get detectionConfidences =>
+      detections.map((detection) => detection.confidence).toList();
+
+  /// `true` jika server sudah selesai menganalisis foto ini.
+  bool get hasDetection => detectionStatus == 'success';
+
+  /// `true` jika foto ini masih menunggu hasil YOLO.
+  bool get detectionPending => detectionStatus == 'pending';
+
+  /// `true` jika inferensi YOLO foto ini gagal.
+  bool get detectionFailed => detectionStatus == 'failed';
+
+  /// Jumlah telur retak pada foto ini.
+  int get crackedEggCount =>
+      detections.where((detection) => detection.isCracked).length;
+
+  /// Jumlah telur utuh pada foto ini.
+  int get intactEggCount =>
+      detections.where((detection) => !detection.isCracked).length;
 
   /// Rata-rata konfiden deteksi (0–100), `null` jika tidak ada deteksi.
   int? get averageConfidencePercent {

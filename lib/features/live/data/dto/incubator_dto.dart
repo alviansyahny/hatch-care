@@ -7,6 +7,7 @@ library;
 /// Satu entri riwayat foto inkubator (dari `history` atau `/incubator/history`).
 class IncubatorHistoryEntryDto {
   const IncubatorHistoryEntryDto({
+    this.id,
     this.filename,
     this.url,
     this.timestamp,
@@ -16,8 +17,11 @@ class IncubatorHistoryEntryDto {
     this.lamp,
     this.motor,
     this.sizeKb,
+    this.detection,
   });
 
+  /// ID foto dari server, mis. `20261118_225721_l2wt`.
+  final String? id;
   final String? filename;
   final String? url;
   final int? timestamp;
@@ -30,9 +34,13 @@ class IncubatorHistoryEntryDto {
   /// Ukuran file foto (KB) bila server melaporkannya.
   final int? sizeKb;
 
+  /// Hasil inferensi YOLO untuk foto ini (null untuk data lama).
+  final EggDetectionSummaryDto? detection;
+
   factory IncubatorHistoryEntryDto.fromJson(Object? json) {
     if (json is! Map) return const IncubatorHistoryEntryDto();
     return IncubatorHistoryEntryDto(
+      id: _asId(json['id']),
       filename: json['filename'] is String ? json['filename'] as String : null,
       url: json['url'] is String ? json['url'] as String : null,
       timestamp: json['timestamp'] is num
@@ -44,6 +52,113 @@ class IncubatorHistoryEntryDto {
       lamp: json['lamp'] is bool ? json['lamp'] as bool : null,
       motor: json['motor'] is bool ? json['motor'] as bool : null,
       sizeKb: json['size_kb'] is num ? (json['size_kb'] as num).toInt() : null,
+      detection: EggDetectionSummaryDto.tryFromJson(json['detection']),
+    );
+  }
+
+  static String? _asId(Object? value) {
+    if (value is String && value.isNotEmpty) return value;
+    if (value is num) return value.toString();
+    return null;
+  }
+
+  static double? _asDouble(Object? value) {
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
+  }
+}
+
+/// Ringkasan inferensi YOLO untuk satu foto (`detection`).
+class EggDetectionSummaryDto {
+  const EggDetectionSummaryDto({
+    this.status,
+    this.totalEggs,
+    this.detections = const [],
+    this.photoId,
+  });
+
+  /// Status inferensi: `success`, `pending`, atau `failed`.
+  final String? status;
+
+  /// Jumlah telur hasil hitung server.
+  final int? totalEggs;
+
+  /// Deteksi per telur beserta bounding box dan keyakinan.
+  final List<EggDetectionDto> detections;
+
+  /// ID foto yang dianalisis (bila dikirim server).
+  final String? photoId;
+
+  bool get hasData =>
+      status != null ||
+      totalEggs != null ||
+      detections.isNotEmpty ||
+      photoId != null;
+
+  factory EggDetectionSummaryDto.fromJson(Object? json) {
+    if (json is! Map) return const EggDetectionSummaryDto();
+    final detections = <EggDetectionDto>[];
+    final rawDetections = json['detections'];
+    if (rawDetections is List) {
+      for (final item in rawDetections) {
+        if (item is num) {
+          detections.add(EggDetectionDto(confidence: item.toDouble()));
+          continue;
+        }
+        final detection = EggDetectionDto.fromJson(item);
+        if (detection.className != null ||
+            detection.confidence != null ||
+            detection.box != null) {
+          detections.add(detection);
+        }
+      }
+    }
+    return EggDetectionSummaryDto(
+      status: json['status'] is String ? json['status'] as String : null,
+      totalEggs: json['total_eggs'] is num
+          ? (json['total_eggs'] as num).toInt()
+          : null,
+      detections: detections,
+      photoId: json['photo_id'] is String ? json['photo_id'] as String : null,
+    );
+  }
+
+  /// Null jika objek `detection` tidak ada di response (data lama).
+  static EggDetectionSummaryDto? tryFromJson(Object? json) {
+    if (json is! Map) return null;
+    final summary = EggDetectionSummaryDto.fromJson(json);
+    return summary.hasData ? summary : null;
+  }
+}
+
+/// Satu deteksi telur dari model YOLO (`detections[]`).
+class EggDetectionDto {
+  const EggDetectionDto({this.id, this.className, this.confidence, this.box});
+
+  final int? id;
+  final String? className;
+  final double? confidence;
+
+  /// Koordinat `[x, y, width, height]` dalam piksel citra asli.
+  final List<double>? box;
+
+  factory EggDetectionDto.fromJson(Object? json) {
+    if (json is! Map) return const EggDetectionDto();
+    final rawBox = json['box'];
+    List<double>? box;
+    if (rawBox is List &&
+        rawBox.length == 4 &&
+        rawBox.every((value) => value is num)) {
+      box = rawBox
+          .map((value) => (value as num).toDouble())
+          .toList(growable: false);
+    }
+    return EggDetectionDto(
+      id: json['id'] is num ? (json['id'] as num).toInt() : null,
+      className: json['class'] is String ? json['class'] as String : null,
+      confidence: _asDouble(json['confidence']),
+      box: box,
     );
   }
 
@@ -62,6 +177,8 @@ class IncubatorLatestDto {
     this.imageUrl,
     required this.totalEggs,
     required this.detections,
+    this.detectionStatus,
+    this.detectionPhotoId,
     this.temperature,
     this.humidity,
     this.lamp,
@@ -84,8 +201,14 @@ class IncubatorLatestDto {
 
   final int totalEggs;
 
-  /// Konfiden tiap deteksi telur (0.0–1.0, bisa null).
-  final List<double?> detections;
+  /// Deteksi telur terbaru beserta bounding box dari YOLO.
+  final List<EggDetectionDto> detections;
+
+  /// Status inferensi YOLO: `success`, `pending`, atau `failed`.
+  final String? detectionStatus;
+
+  /// ID foto yang dianalisis YOLO pada `detection` teratas (bila dikirim).
+  final String? detectionPhotoId;
 
   final double? temperature;
   final double? humidity;
@@ -107,23 +230,14 @@ class IncubatorLatestDto {
         history: [],
       );
     }
-    final detections = <double?>[];
+    final detection = EggDetectionSummaryDto.tryFromJson(json['detection']);
     final rawDetections = json['detections'];
-    if (rawDetections is List) {
-      for (final item in rawDetections) {
-        if (item is Map) {
-          detections.add(
-            item['confidence'] is num
-                ? (item['confidence'] as num).toDouble()
-                : null,
-          );
-        } else if (item is num) {
-          detections.add(item.toDouble());
-        } else {
-          detections.add(null);
-        }
-      }
-    }
+    final detections = rawDetections is List
+        ? EggDetectionSummaryDto.fromJson({
+            'detections': rawDetections,
+          }).detections
+        : detection?.detections ?? const <EggDetectionDto>[];
+    final rawTotalEggs = json['total_eggs'] ?? detection?.totalEggs;
     final history = <IncubatorHistoryEntryDto>[];
     final rawHistory = json['history'];
     if (rawHistory is List) {
@@ -135,10 +249,10 @@ class IncubatorLatestDto {
       status: json['status'] is String ? json['status'] as String : null,
       online: json['online'] == true,
       imageUrl: _imageUrl(json),
-      totalEggs: json['total_eggs'] is num
-          ? (json['total_eggs'] as num).toInt()
-          : 0,
+      totalEggs: rawTotalEggs is num ? rawTotalEggs.toInt() : detections.length,
       detections: detections,
+      detectionStatus: detection?.status,
+      detectionPhotoId: _asId(json['photo_id']) ?? detection?.photoId,
       temperature: _asDouble(json['temperature']),
       humidity: _asDouble(json['humidity']),
       lamp: json['lamp'] is bool ? json['lamp'] as bool : null,
@@ -160,6 +274,12 @@ class IncubatorLatestDto {
   static String? _imageUrl(Object? json) {
     final image = (json as Map)['image'] ?? json['url'];
     return image is String && image.isNotEmpty ? image : null;
+  }
+
+  static String? _asId(Object? value) {
+    if (value is String && value.isNotEmpty) return value;
+    if (value is num) return value.toString();
+    return null;
   }
 
   static double? _asDouble(Object? value) {

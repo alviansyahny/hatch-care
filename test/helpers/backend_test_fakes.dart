@@ -31,8 +31,28 @@ const IncubatorSnapshot kFakeIncubatorSnapshot = IncubatorSnapshot(
   online: true,
   statusLabel: 'online',
   image: IncubatorImage.base64(_kFakeImageBase64),
-  totalEggs: 12,
-  detectionConfidences: [0.95, 0.88],
+  totalEggs: 2,
+  detections: [
+    EggDetection(
+      id: 1,
+      label: 'utuh',
+      confidence: 0.95,
+      x: 0,
+      y: 0,
+      width: 1,
+      height: 1,
+    ),
+    EggDetection(
+      id: 2,
+      label: 'retak',
+      confidence: 0.88,
+      x: 0,
+      y: 0,
+      width: 1,
+      height: 1,
+    ),
+  ],
+  detectionStatus: 'success',
   temperature: 37.6,
   humidity: 55.0,
   lamp: true,
@@ -60,6 +80,9 @@ class _FakeEggCaptureNotifier extends EggCaptureNotifier {
 class _FakeIncubatorLatestNotifier extends IncubatorLatestNotifier {
   @override
   FutureOr<IncubatorSnapshot> build() => kFakeIncubatorSnapshot;
+
+  @override
+  Future<bool> recapture() async => true;
 }
 
 /// Membungkus [child] dengan ProviderScope yang seluruh provider backend-nya

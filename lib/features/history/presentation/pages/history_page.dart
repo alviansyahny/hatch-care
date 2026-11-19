@@ -17,11 +17,37 @@ import 'package:hatch_care/features/history/presentation/widgets/history_filter_
 /// halaman Live, lengkap dengan kondisi tray saat foto diambil (suhu,
 /// kelembapan, lampu, motor) dan hasil deteksi telur YOLO untuk foto
 /// terbaru. Ketuk kartu untuk detail + perbandingan before/after.
-class HistoryPage extends ConsumerWidget {
+class HistoryPage extends ConsumerStatefulWidget {
   const HistoryPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HistoryPage> createState() => _HistoryPageState();
+}
+
+class _HistoryPageState extends ConsumerState<HistoryPage> {
+  bool? _wasActive;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh otomatis saat tab History kembali aktif, agar foto baru dari
+    // menu Live (beserta analisis YOLO-nya) langsung muncul.
+    final isActive = TickerMode.of(context);
+    if (_wasActive == false && isActive) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        try {
+          await ref.read(incubatorHistoryProvider.notifier).refresh();
+        } on ApiException {
+          // Kegagalan sudah ditampilkan lewat state provider.
+        }
+      });
+    }
+    _wasActive = isActive;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final asyncData = ref.watch(incubatorHistoryProvider);
     final data = asyncData.value ?? const CaptureHistoryData.empty();
     final records = ref.watch(filteredCaptureRecordsProvider);
@@ -119,7 +145,7 @@ class _HistoryBody extends StatelessWidget {
                 _SummaryRow(
                   temperature: data.temperature,
                   humidity: data.humidity,
-                  latestEggCount: data.records.first.eggCount,
+                  latest: data.records.first,
                 ),
                 const SizedBox(height: AppSpacing.md),
                 const HistoryFilterChips(),
@@ -217,15 +243,23 @@ class _SummaryRow extends StatelessWidget {
   const _SummaryRow({
     required this.temperature,
     required this.humidity,
-    required this.latestEggCount,
+    required this.latest,
   });
 
   final double? temperature;
   final double? humidity;
-  final int? latestEggCount;
+  final CaptureRecord latest;
 
   @override
   Widget build(BuildContext context) {
+    final eggCount = latest.eggCount;
+    final subtitle = latest.hasDetection
+        ? '${latest.intactEggCount} utuh · ${latest.crackedEggCount} retak'
+        : latest.detectionPending
+        ? 'sedang dianalisis'
+        : latest.detectionFailed
+        ? 'deteksi gagal'
+        : null;
     return Row(
       children: [
         Expanded(
@@ -242,9 +276,7 @@ class _SummaryRow extends StatelessWidget {
           child: _SummaryCard(
             icon: Icons.water_drop_outlined,
             label: 'Kelembapan',
-            value: humidity != null
-                ? '${humidity!.toStringAsFixed(0)}%'
-                : '-',
+            value: humidity != null ? '${humidity!.toStringAsFixed(0)}%' : '-',
           ),
         ),
         const SizedBox(width: AppSpacing.sm),
@@ -252,8 +284,8 @@ class _SummaryRow extends StatelessWidget {
           child: _SummaryCard(
             icon: Icons.egg_outlined,
             label: 'Telur',
-            value: latestEggCount != null ? '$latestEggCount butir' : '-',
-            subtitle: latestEggCount != null ? 'foto terbaru (YOLO)' : null,
+            value: eggCount != null ? '$eggCount butir' : '-',
+            subtitle: subtitle,
           ),
         ),
       ],
@@ -343,7 +375,11 @@ class _EmptyView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.photo_library_outlined, size: 48, color: AppColors.textMuted),
+            Icon(
+              Icons.photo_library_outlined,
+              size: 48,
+              color: AppColors.textMuted,
+            ),
             SizedBox(height: AppSpacing.md),
             Text(
               'Belum ada foto inkubator.\nFoto akan muncul setelah kamera '
@@ -390,7 +426,11 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.cloud_off_outlined, size: 48, color: AppColors.textMuted),
+            const Icon(
+              Icons.cloud_off_outlined,
+              size: 48,
+              color: AppColors.textMuted,
+            ),
             const SizedBox(height: AppSpacing.md),
             Text(
               '$message Coba lagi nanti.',

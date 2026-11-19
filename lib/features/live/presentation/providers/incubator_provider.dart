@@ -27,9 +27,13 @@ final incubatorRepositoryProvider = Provider<IncubatorRepository>((ref) {
 /// - Semua kegagalan dipetakan ke pesan Indonesia.
 class IncubatorLatestNotifier extends AsyncNotifier<IncubatorSnapshot> {
   static const _pollInterval = Duration(seconds: 20);
+  static const _recaptureTimeout = Duration(seconds: 50);
+  static const _recapturePollInterval = Duration(seconds: 2);
 
   Timer? _timer;
   bool _inFlight = false;
+  bool _recapturing = false;
+  bool _disposed = false;
   AppLifecycleListener? _lifecycle;
 
   @override
@@ -47,6 +51,59 @@ class IncubatorLatestNotifier extends AsyncNotifier<IncubatorSnapshot> {
   /// Fetch manual (tombol refresh / periksa ulang).
   Future<void> refresh() => _fetch();
 
+  /// Meminta capture baru lalu menunggu foto + hasil YOLO terbaru.
+  ///
+  /// Return `true` bila foto baru sudah diterima server, `false` bila
+  /// perintah terkirim tetapi foto baru belum masuk sampai batas waktu.
+  Future<bool> recapture() async {
+    if (_disposed || _recapturing) return false;
+    _recapturing = true;
+    _stopTimer();
+    ref.read(incubatorRecaptureProvider.notifier).set(true);
+    final previous = state.value;
+    final previousKey = _imageKey(previous?.image);
+    // Backend lama tidak mengirim status YOLO; jangan menunggu analisis.
+    final expectsDetection =
+        previous != null &&
+        (previous.detectionStatus != null || previous.detections.isNotEmpty);
+    var newImageReceived = false;
+    try {
+      await ref.read(incubatorRepositoryProvider).triggerCapture();
+      final deadline = DateTime.now().add(_recaptureTimeout);
+      while (DateTime.now().isBefore(deadline)) {
+        if (_disposed) return false;
+        await Future<void>.delayed(_recapturePollInterval);
+        if (_disposed) return false;
+        final snapshot = await ref
+            .read(incubatorRepositoryProvider)
+            .fetchLatest();
+        if (_disposed) return false;
+        if (_imageKey(snapshot.image) != previousKey) {
+          newImageReceived = true;
+        }
+        state = AsyncData(snapshot);
+        final analyzed =
+            snapshot.detectionStatus == 'success' ||
+            snapshot.detectionStatus == 'failed' ||
+            (snapshot.detectionStatus == null &&
+                (!expectsDetection || snapshot.detections.isNotEmpty));
+        if (newImageReceived && analyzed) return true;
+      }
+      return newImageReceived;
+    } finally {
+      _recapturing = false;
+      if (!_disposed) {
+        ref.read(incubatorRecaptureProvider.notifier).set(false);
+        _startTimer();
+      }
+    }
+  }
+
+  String? _imageKey(IncubatorImage? image) {
+    if (image == null || image.isEmpty) return null;
+    return image.isNetwork ? image.networkUrl : image.base64Data;
+  }
+
   Future<void> _resume() async {
     await _fetch();
     _startTimer();
@@ -61,7 +118,9 @@ class IncubatorLatestNotifier extends AsyncNotifier<IncubatorSnapshot> {
       final snapshot = await ref
           .read(incubatorRepositoryProvider)
           .fetchLatest();
-      state = AsyncData(snapshot);
+      if (!_disposed) {
+        state = AsyncData(snapshot);
+      }
       return snapshot;
     } on ApiException catch (e) {
       state = AsyncError(e, StackTrace.current);
@@ -81,6 +140,7 @@ class IncubatorLatestNotifier extends AsyncNotifier<IncubatorSnapshot> {
   }
 
   void _stop() {
+    _disposed = true;
     _stopTimer();
     _lifecycle?.dispose();
     _lifecycle = null;
@@ -93,3 +153,19 @@ final incubatorLatestProvider =
       IncubatorLatestNotifier,
       IncubatorSnapshot
     >(IncubatorLatestNotifier.new);
+
+/// Status tombol "Periksa Ulang Telur" sedang menunggu capture + YOLO.
+class IncubatorRecaptureNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  /// Mengubah status proses periksa ulang.
+  void set(bool value) {
+    state = value;
+  }
+}
+
+final incubatorRecaptureProvider =
+    NotifierProvider.autoDispose<IncubatorRecaptureNotifier, bool>(
+      IncubatorRecaptureNotifier.new,
+    );

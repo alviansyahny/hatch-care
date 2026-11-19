@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -13,21 +15,38 @@ void main() {
           200,
           '{"status":"online","online":true,'
           '"image":"/incubator/photo/inc_1.jpg","url":"/incubator/photo/inc_1.jpg",'
-          '"total_eggs":12,'
-          '"detections":[{"confidence":0.95},{"confidence":null}],'
+          '"total_eggs":2,'
+          '"detections":['
+          '{"id":1,"box":[10,20,100,120],"class":"utuh","confidence":0.95},'
+          '{"id":2,"box":[110,25,200,125],"class":"retak","confidence":0.88}'
+          '],'
+          '"detection":{"status":"success","total_eggs":2,"detections":[]},'
           '"temperature":37.6,"humidity":55.2,"lamp":true,"motor":false,'
           '"rssi":-60,"last_updated":"2026-11-12T10:00:00Z","timestamp":1762900000,'
           '"last_seen_sec":5,'
           '"history":[{"filename":"inc_0.jpg","url":"/incubator/photo/inc_0.jpg",'
-          '"timestamp":1762899940,"temperature":37.5,"humidity":54.9}]}',
+          '"timestamp":1762899940,"temperature":37.5,"humidity":54.9,'
+          '"detection":{"status":"success","total_eggs":1,"detections":['
+          '{"id":1,"box":[1,2,30,40],"class":"retak","confidence":0.8}]}}]}',
         ),
       );
       final snapshot = await repo.fetchLatest();
       expect(snapshot.online, isTrue);
-      expect(snapshot.totalEggs, 12);
+      expect(snapshot.totalEggs, 2);
       expect(snapshot.temperature, 37.6);
       expect(snapshot.humidity, 55.2);
-      expect(snapshot.detectionConfidences, [0.95, null]);
+      expect(snapshot.detectionStatus, 'success');
+      expect(snapshot.detections, hasLength(2));
+      expect(snapshot.detections.first.id, 1);
+      expect(snapshot.detections.first.label, 'utuh');
+      expect(snapshot.detections.first.confidence, 0.95);
+      expect(snapshot.detections.first.x, 10);
+      expect(snapshot.detections.first.y, 20);
+      expect(snapshot.detections.first.width, 100);
+      expect(snapshot.detections.first.height, 120);
+      expect(snapshot.detections.last.isCracked, isTrue);
+      expect(snapshot.crackedEggCount, 1);
+      expect(snapshot.detectionConfidences, [0.95, 0.88]);
       expect(snapshot.lastCaptureAt, isNotNull);
       expect(snapshot.image.isNetwork, isTrue);
       expect(
@@ -36,6 +55,96 @@ void main() {
       );
       expect(snapshot.history, hasLength(1));
       expect(snapshot.history[0].temperature, 37.5);
+      expect(snapshot.history[0].detectionStatus, 'success');
+      expect(snapshot.history[0].totalEggs, 1);
+      expect(snapshot.history[0].detections, hasLength(1));
+      expect(snapshot.history[0].detections.single.isCracked, isTrue);
+      expect(snapshot.history[0].detections.single.confidence, 0.8);
+    });
+
+    test('fetchLatest memakai detections dari objek detection', () async {
+      final repo = IncubatorRepositoryImpl(
+        _mockClient(
+          200,
+          '{"online":true,"image":"/incubator/photo/inc_2.jpg",'
+          '"detection":{"status":"success","total_eggs":1,"detections":['
+          '{"id":1,"box":[5,6,70,80],"class":"retak","confidence":0.77}]}}',
+        ),
+      );
+      final snapshot = await repo.fetchLatest();
+      expect(snapshot.detectionStatus, 'success');
+      expect(snapshot.totalEggs, 1);
+      expect(snapshot.detections, hasLength(1));
+      expect(snapshot.detections.first.label, 'retak');
+      expect(snapshot.detections.first.hasBox, isTrue);
+    });
+
+    test('fetchLatest memakai deteksi milik foto utama dari riwayat', () async {
+      final repo = IncubatorRepositoryImpl(
+        _mockClient(
+          200,
+          '{"online":true,"image":"/incubator/photo/inc_9.jpg",'
+          '"total_eggs":4,'
+          '"detections":['
+          '{"id":1,"box":[1,1,10,10],"class":"utuh","confidence":0.9},'
+          '{"id":2,"box":[2,2,10,10],"class":"utuh","confidence":0.9},'
+          '{"id":3,"box":[3,3,10,10],"class":"retak","confidence":0.5},'
+          '{"id":4,"box":[4,4,10,10],"class":"utuh","confidence":0.7}'
+          '],'
+          '"detection":{"status":"success","total_eggs":4,"photo_id":"inc_8",'
+          '"detections":[{"id":1,"box":[1,1,1,1],"class":"utuh",'
+          '"confidence":0.9}]},'
+          '"history":[{"id":"inc_9","url":"/incubator/photo/inc_9.jpg",'
+          '"detection":{"status":"success","total_eggs":2,"photo_id":"inc_9",'
+          '"detections":['
+          '{"id":1,"box":[10,20,30,40],"class":"utuh","confidence":0.93},'
+          '{"id":2,"box":[50,60,70,80],"class":"retak","confidence":0.54}]}}]}',
+        ),
+      );
+      final snapshot = await repo.fetchLatest();
+      expect(snapshot.detectionStatus, 'success');
+      expect(snapshot.totalEggs, 2);
+      expect(snapshot.detections, hasLength(2));
+      expect(snapshot.crackedEggCount, 1);
+      expect(snapshot.history.single.id, 'inc_9');
+      expect(snapshot.history.single.detectionStatus, 'success');
+      expect(snapshot.history.single.totalEggs, 2);
+    });
+
+    test(
+      'fetchLatest mengabaikan deteksi lama saat foto baru belum dianalisis',
+      () async {
+        final repo = IncubatorRepositoryImpl(
+          _mockClient(
+            200,
+            '{"online":true,"image":"/incubator/photo/inc_10.jpg",'
+            '"total_eggs":4,'
+            '"detections":['
+            '{"id":1,"box":[1,1,10,10],"class":"utuh","confidence":0.9}],'
+            '"detection":{"status":"success","total_eggs":4,"photo_id":"inc_9"},'
+            '"history":[{"id":"inc_10",'
+            '"url":"/incubator/photo/inc_10.jpg"}]}',
+          ),
+        );
+        final snapshot = await repo.fetchLatest();
+        expect(snapshot.detectionStatus, isNull);
+        expect(snapshot.totalEggs, 0);
+        expect(snapshot.detections, isEmpty);
+        expect(snapshot.image.networkUrl, endsWith('/inc_10.jpg'));
+      },
+    );
+
+    test('fetchLatest tetap membaca deteksi lama tanpa box', () async {
+      final repo = IncubatorRepositoryImpl(
+        _mockClient(
+          200,
+          '{"online":true,"total_eggs":2,'
+          '"detections":[{"confidence":0.95},{"confidence":null}]}',
+        ),
+      );
+      final snapshot = await repo.fetchLatest();
+      expect(snapshot.detectionConfidences, [0.95]);
+      expect(snapshot.detections.first.hasBox, isFalse);
     });
 
     test('fetchLatest dengan base64 data-URI', () async {
@@ -71,6 +180,29 @@ void main() {
           ),
         ),
       );
+    });
+
+    test('triggerCapture POST ke /incubator/control', () async {
+      late http.Request captured;
+      final repo = IncubatorRepositoryImpl(
+        MockClient((request) async {
+          captured = request;
+          return http.Response(
+            '{"status":"success"}',
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          );
+        }),
+      );
+      await repo.triggerCapture();
+      expect(captured.method, 'POST');
+      expect(captured.url.path, '/incubator/control');
+      expect(jsonDecode(captured.body), {'triggerCapture': true});
+    });
+
+    test('triggerCapture kode status bukan 200 → ApiException', () async {
+      final repo = IncubatorRepositoryImpl(_mockClient(500, ''));
+      await expectLater(repo.triggerCapture(), throwsA(isA<ApiException>()));
     });
 
     test('fetchHistory mem-parse field history', () async {

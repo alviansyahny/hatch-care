@@ -7,4 +7,7 @@ abstract interface class IncubatorRepository {
 
   /// Riwayat foto 1 jam terakhir.
   Future<List<IncubatorHistoryEntry>> fetchHistory();
+
+  /// Meminta ESP32-CAM mengambil foto baru dan menganalisisnya ulang.
+  Future<void> triggerCapture();
 }

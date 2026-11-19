@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:hatch_care/screens/connected_app.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-void main() {
-  runApp(const HatchCareApp());
-}
+import 'package:hatch_care/app/app.dart';
+import 'package:hatch_care/features/auth/presentation/providers/auth_provider.dart';
 
-class HatchCareApp extends StatelessWidget {
-  const HatchCareApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: ConnectedApp(),
-    );
-  }
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+  runApp(
+    ProviderScope(
+      overrides: [sessionStoreProvider.overrideWithValue(prefs)],
+      child: const HatchCareApp(),
+    ),
+  );
 }
